@@ -101,6 +101,7 @@ const VOLGORDE = {
 };
 const SOORT = { op:'Opwarmen', af:'Afkoelen' };
 const MAX_VIDEO = 50 * 1024 * 1024;
+const MELDEN = 'https://github.com/jannesdc/kurk/issues/new/choose';
 
 const app = document.getElementById('app');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -156,7 +157,8 @@ function render() {
   }
   const tabs = [['oefeningen','Oefeningen'],['stijlen','Zangstijlen'],['niveaus','Niveaus'],['duren','Duur'],['account','Account & back-up']];
   app.innerHTML = `
-    <div class="row"><h1>Kurk beheer</h1><span class="spacer"></span><span class="muted small">${esc(gebruiker.email)}</span><button class="btn ghost small" data-a="uitloggen">Uitloggen</button></div>
+    <div class="row"><h1>Kurk beheer</h1><span class="spacer"></span><span class="muted small">${esc(gebruiker.email)}</span>
+      <a class="btn ghost small" href="${MELDEN}" target="_blank" rel="noopener" style="text-decoration:none">Probleem of wens melden</a><button class="btn ghost small" data-a="uitloggen">Uitloggen</button></div>
     <nav class="tabs">${tabs.map(([k, n]) => `<button class="tab" data-a="tab" data-v="${k}" ${tab === k ? 'aria-current="page"' : ''}>${n}</button>`).join('')}</nav>
     ${{ oefeningen: bewerk ? editor : oefeningenLijst, stijlen: () => lijstTab('stijlen'), niveaus: () => lijstTab('niveaus'), duren: durenTab, account: accountTab }[tab]()}`;
 }

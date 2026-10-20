@@ -1,0 +1,41 @@
+name: Probleem melden
+description: Iets werkt niet of ziet er verkeerd uit.
+title: "Probleem: "
+labels: [bug]
+body:
+  - type: dropdown
+    id: waar
+    attributes:
+      label: Waar zag je het?
+      options:
+        - In de app
+        - In het beheer (/admin)
+    validations:
+      required: true
+  - type: textarea
+    id: wat
+    attributes:
+      label: Wat ging er mis?
+      description: Wat deed je, wat gebeurde er, en wat had je verwacht?
+      placeholder: "Bv. Ik tikte op 'Start opwarmen' en het scherm bleef wit."
+    validations:
+      required: true
+  - type: input
+    id: scherm
+    attributes:
+      label: Op welk scherm of bij welke oefening?
+      placeholder: "Bv. Profiel, of de oefening 'Lippentril'"
+  - type: dropdown
+    id: toestel
+    attributes:
+      label: Op welk toestel?
+      options:
+        - iPhone
+        - Android-telefoon
+        - Tablet
+        - Computer
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Schermafbeelding (mag)
+      description: Sleep een afbeelding in dit vak of plak ze hier.

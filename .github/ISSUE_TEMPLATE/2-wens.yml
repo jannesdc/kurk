@@ -1,0 +1,26 @@
+name: Wens of idee
+description: Iets dat je graag in de app of het beheer zou zien.
+title: "Wens: "
+labels: [enhancement]
+body:
+  - type: dropdown
+    id: waar
+    attributes:
+      label: Voor welk deel?
+      options:
+        - De app
+        - Het beheer (/admin)
+    validations:
+      required: true
+  - type: textarea
+    id: wens
+    attributes:
+      label: Wat zou je willen?
+      placeholder: "Bv. Een oefening kunnen herhalen zonder de hele sessie opnieuw te starten."
+    validations:
+      required: true
+  - type: textarea
+    id: waarom
+    attributes:
+      label: Waarom zou dat helpen?
+      description: Mag kort. Helpt om de beste oplossing te kiezen.
