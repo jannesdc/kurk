@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Kurk beheer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap">
+<style>
+/* Same tokens as app.html; layout is a wide single column for editing on a laptop */
+:root {
+  --bg: #EEF2F1; --surface: #FFFFFF; --ink: #182326; --muted: #56666A; --line: #D6DFDD;
+  --warm: #C9531F; --warm-soft: #FBE4D6; --cool: #23707F; --cool-soft: #D7ECEF; --good: #2F7D4F; --bad: #A8402E;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --r: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101618; --surface: #1A2326; --ink: #E7EEEE; --muted: #9AABAE; --line: #2B373A;
+    --warm: #F08657; --warm-soft: #3B2418; --cool: #63BCCB; --cool-soft: #15313A; --good: #6CC593; --bad: #F08A78;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101618; --surface: #1A2326; --ink: #E7EEEE; --muted: #9AABAE; --line: #2B373A;
+  --warm: #F08657; --warm-soft: #3B2418; --cool: #63BCCB; --cool-soft: #15313A; --good: #6CC593; --bad: #F08A78;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--ink); margin: 0; }
+body { font-family: var(--f-body); font-size: 16px; line-height: 1.5; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--cool); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--f-display); line-height: 1.15; margin: 0; }
+h1 { font-size: 1.8rem; font-weight: 800; } h2 { font-size: 1.3rem; } h3 { font-size: 1.05rem; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: .88rem; }
+.wrap { max-width: 920px; margin: 0 auto; padding: 24px 16px 80px; display: flex; flex-direction: column; gap: 20px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.spacer { flex: 1; }
+.btn { border: 0; border-radius: 99px; padding: 10px 18px; background: var(--ink); color: var(--bg); font-weight: 700; }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn.danger { background: var(--bad); color: var(--bg); }
+.btn.small { padding: 6px 12px; font-size: .88rem; }
+.btn:disabled { opacity: .5; cursor: default; }
+.link { background: none; border: 0; padding: 0; color: var(--cool); text-decoration: underline; font-weight: 700; }
+label { display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: .92rem; }
+label .hint { font-weight: 400; color: var(--muted); font-size: .85rem; }
+input[type=text], input[type=email], input[type=password], input[type=number], input[type=search], select, textarea {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-weight: 400;
+}
+textarea { min-height: 80px; resize: vertical; }
+.check { flex-direction: row; align-items: center; gap: 8px; font-weight: 400; }
+.checks { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.checks.disabled { opacity: .45; pointer-events: none; }
+fieldset { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px 14px; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+legend { font-weight: 700; font-size: .92rem; padding: 0 4px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.tab { border: 1px solid var(--line); background: transparent; border-radius: 99px; padding: 6px 14px; font-weight: 700; }
+.tab[aria-current] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.list { display: flex; flex-direction: column; }
+.item { display: flex; gap: 12px; align-items: center; padding: 10px 4px; border-top: 1px solid var(--line); }
+.item:first-child { border-top: 0; }
+.item .txt { flex: 1; min-width: 0; }
+.item .txt b { display: block; }
+.tag { display: inline-block; font-size: .75rem; font-weight: 700; border-radius: 99px; padding: 1px 8px; margin-right: 4px; }
+.tag.op { background: var(--warm-soft); color: var(--warm); }
+.tag.af { background: var(--cool-soft); color: var(--cool); }
+.tag.verborgen { border: 1px dashed var(--muted); color: var(--muted); }
+.eyebrow { font-size: .75rem; text-transform: uppercase; letter-spacing: .09em; font-weight: 700; color: var(--muted); margin-top: 8px; }
+.warn { color: var(--bad); font-size: .88rem; }
+.ordering { display: flex; flex-direction: column; gap: 2px; }
+.ordering button { border: 1px solid var(--line); background: transparent; border-radius: 6px; padding: 0 6px; line-height: 1.3; font-size: .8rem; }
+.edit-row { display: grid; grid-template-columns: auto 1fr 2fr auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+.edit-row:first-child { border-top: 0; }
+@media (max-width: 640px) { .edit-row { grid-template-columns: auto 1fr; } }
+video { width: 100%; max-height: 260px; border-radius: 10px; background: #000; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 99px; font-weight: 700; max-width: calc(100% - 32px); z-index: 10; }
+.toast.err { background: var(--bad); }
+.login { max-width: 400px; margin: 10vh auto 0; }
+</style>
+</head>
+<body>
+<div id="app" class="wrap"><p class="muted">Laden…</p></div>
+<div id="toast" class="toast" hidden></div>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+/* Fixed in code (they drive how routines are built in app.html) — keep in sync with CATEGORIEEN/VOLGORDE there. */
+const CATEGORIEEN = { lichaam:'Lichaam', adem:'Ademhaling', sovt:'SOVT', resonantie:'Resonantie', bereik:'Bereik', articulatie:'Articulatie', stijl:'Stijl', ontspanning:'Ontspanning', afbouw:'Afbouwen', rust:'Stemrust' };
+const VOLGORDE = {
+  op: ['lichaam','adem','sovt','resonantie','bereik','articulatie','stijl'],
+  af: ['sovt','afbouw','ontspanning','lichaam','rust'],
+};
+const SOORT = { op:'Opwarmen', af:'Afkoelen' };
+const MAX_VIDEO = 50 * 1024 * 1024;
+
+const app = document.getElementById('app');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const fmt = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+const slug = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'item';
+const uniek = (basis, bestaand) => { let id = basis, n = 2; while (bestaand.includes(id)) id = `${basis}-${n++}`; return id; };
+function toast(t, fout) {
+  const el = document.getElementById('toast'); el.textContent = t; el.className = 'toast' + (fout ? ' err' : ''); el.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, fout ? 6000 : 2200);
+}
+function foutTekst(e) {
+  const m = e?.message || String(e);
+  if (/row-level security|permission denied/i.test(m)) return 'Geen rechten om dit te wijzigen. Ben je nog ingelogd als beheerder?';
+  if (/Invalid login credentials/i.test(m)) return 'E-mailadres of wachtwoord klopt niet.';
+  if (/duplicate key/i.test(m)) return 'Dit bestaat al.';
+  if (/check constraint/i.test(m)) return 'Een van de velden heeft een ongeldige waarde.';
+  if (/Failed to fetch|NetworkError/i.test(m)) return 'Geen verbinding met de server.';
+  return 'Er ging iets mis: ' + m;
+}
+
+/* ---------- Verbinding ---------- */
+const cfg = window.KURK || {};
+if (!cfg.url || !cfg.key || !window.supabase) {
+  app.innerHTML = `<div class="card login"><h1>Kurk beheer</h1><p>Het beheer is nog niet gekoppeld aan een database. Vul de Supabase-gegevens in <code>config.js</code> in.</p></div>`;
+  throw new Error('config.js niet ingevuld');
+}
+const db = supabase.createClient(cfg.url, cfg.key);
+
+/* ---------- Staat ---------- */
+let gebruiker = null, isAdmin = false;
+let tab = 'oefeningen', zoek = '', bewerk = null; // bewerk: null | { nieuw, o }
+let D = { oefeningen:[], stijlen:[], niveaus:[], duren:[] };
+let concept = null; // unsaved copy for the stijlen/niveaus/duren tabs
+
+async function laadAlles() {
+  const [o, s, n, i] = await Promise.all([
+    db.from('oefeningen').select('*').order('positie'),
+    db.from('stijlen').select('*').order('positie'),
+    db.from('niveaus').select('*').order('positie'),
+    db.from('instellingen').select('*'),
+  ]);
+  const fout = [o, s, n, i].find(r => r.error); if (fout) throw fout.error;
+  D = { oefeningen:o.data, stijlen:s.data, niveaus:n.data, duren:i.data.find(x => x.sleutel === 'duren')?.waarde || [] };
+  concept = null;
+}
+
+/* ---------- Schermen ---------- */
+function render() {
+  if (!gebruiker) return renderLogin();
+  if (!isAdmin) {
+    app.innerHTML = `<div class="card login"><h1>Geen toegang</h1><p>${esc(gebruiker.email)} is geen beheerder van Kurk. Vraag de eigenaar om je toe te voegen.</p><button class="btn ghost" data-a="uitloggen">Uitloggen</button></div>`;
+    return;
+  }
+  const tabs = [['oefeningen','Oefeningen'],['stijlen','Zangstijlen'],['niveaus','Niveaus'],['duren','Duur'],['account','Account & back-up']];
+  app.innerHTML = `
+    <div class="row"><h1>Kurk beheer</h1><span class="spacer"></span><span class="muted small">${esc(gebruiker.email)}</span><button class="btn ghost small" data-a="uitloggen">Uitloggen</button></div>
+    <nav class="tabs">${tabs.map(([k, n]) => `<button class="tab" data-a="tab" data-v="${k}" ${tab === k ? 'aria-current="page"' : ''}>${n}</button>`).join('')}</nav>
+    ${{ oefeningen: bewerk ? editor : oefeningenLijst, stijlen: () => lijstTab('stijlen'), niveaus: () => lijstTab('niveaus'), duren: durenTab, account: accountTab }[tab]()}`;
+}
+
+function renderLogin() {
+  app.innerHTML = `<form class="card login" data-form="login">
+    <h1>Kurk beheer</h1>
+    <label>E-mailadres<input type="email" name="email" required autocomplete="username"></label>
+    <label>Wachtwoord<input type="password" name="wachtwoord" required autocomplete="current-password"></label>
+    <button class="btn">Inloggen</button>
+    <p class="muted small">Wachtwoord vergeten? Vraag de eigenaar van de app om het opnieuw in te stellen.</p>
+  </form>`;
+}
+
+function oefeningenLijst() {
+  const q = zoek.toLowerCase();
+  const lijst = D.oefeningen.filter(o => !q || (o.titel + ' ' + o.kort).toLowerCase().includes(q));
+  const groepen = Object.keys(CATEGORIEEN).map(c => [c, lijst.filter(o => o.cat === c)]).filter(g => g[1].length);
+  return `<div class="card">
+    <div class="row"><input type="search" data-a="zoek" placeholder="Zoeken…" value="${esc(zoek)}" style="max-width:320px"><span class="spacer"></span>
+      <button class="btn" data-a="nieuw">+ Nieuwe oefening</button></div>
+    <p class="muted small">${D.oefeningen.length} oefeningen, waarvan ${D.oefeningen.filter(o => !o.zichtbaar).length} verborgen. Wijzigingen zijn zichtbaar zodra iemand de app opnieuw opent.</p>
+    ${groepen.length ? groepen.map(([c, os]) => `<p class="eyebrow">${CATEGORIEEN[c]}</p><div class="list">${os.map(o => `
+      <div class="item"><div class="txt"><b>${esc(o.titel)}</b>
+        <span class="small">${o.soort.map(s => `<span class="tag ${s}">${SOORT[s]}</span>`).join('')}${o.zichtbaar ? '' : '<span class="tag verborgen">Verborgen</span>'}
+        <span class="muted">${fmt(o.duur)} · ${o.video ? 'met video' : 'geen video'}</span></span></div>
+        <button class="btn ghost small" data-a="bewerk" data-v="${esc(o.id)}">Bewerken</button></div>`).join('')}</div>`).join('')
+      : '<p class="muted">Geen oefeningen gevonden.</p>'}
+  </div>`;
+}
+
+function editor() {
+  const { nieuw, o } = bewerk;
+  const alleStijlen = o.stijlen.includes('alle'), alleNiveaus = !o.niveau;
+  return `<form class="card" data-form="oefening">
+    <div class="row"><button type="button" class="link" data-a="terug">← Terug naar de lijst</button></div>
+    <h2>${nieuw ? 'Nieuwe oefening' : esc(o.titel)}</h2>
+    <label>Titel<input type="text" name="titel" value="${esc(o.titel)}" required maxlength="80"></label>
+    <label>Korte uitleg <span class="hint">Eén zin, staat onder de titel.</span><input type="text" name="kort" value="${esc(o.kort)}" maxlength="200"></label>
+    <div class="grid2">
+      <fieldset><legend>Wanneer</legend><div class="checks">
+        ${Object.entries(SOORT).map(([k, n]) => `<label class="check"><input type="checkbox" name="soort" value="${k}" ${o.soort.includes(k) ? 'checked' : ''}> ${n}</label>`).join('')}
+      </div></fieldset>
+      <label>Categorie<select name="cat">${Object.entries(CATEGORIEEN).map(([k, n]) => `<option value="${k}" ${o.cat === k ? 'selected' : ''}>${n}</option>`).join('')}</select>
+        <span class="warn" id="cat-warn"></span></label>
+      <label>Duur in seconden <span class="hint" id="duur-hint">= ${fmt(o.duur)} min</span><input type="number" name="duur" min="10" max="1800" step="5" value="${o.duur}" required></label>
+      <label>Klank <span class="hint">Bv. [m] of [brr]. Gebruik — als er geen klank is.</span><input type="text" name="klank" value="${esc(o.klank)}" maxlength="40"></label>
+    </div>
+    <fieldset><legend>Voor welke zangstijlen</legend>
+      <label class="check"><input type="checkbox" name="alle-stijlen" ${alleStijlen ? 'checked' : ''}> Alle stijlen</label>
+      <div class="checks ${alleStijlen ? 'disabled' : ''}" data-hangt="alle-stijlen">${D.stijlen.map(s => `<label class="check"><input type="checkbox" name="stijlen" value="${esc(s.id)}" ${o.stijlen.includes(s.id) ? 'checked' : ''}> ${esc(s.naam)}</label>`).join('')}</div>
+    </fieldset>
+    <fieldset><legend>Voor welke niveaus</legend>
+      <label class="check"><input type="checkbox" name="alle-niveaus" ${alleNiveaus ? 'checked' : ''}> Alle niveaus</label>
+      <div class="checks ${alleNiveaus ? 'disabled' : ''}" data-hangt="alle-niveaus">${D.niveaus.map(n => `<label class="check"><input type="checkbox" name="niveau" value="${esc(n.id)}" ${o.niveau?.includes(n.id) ? 'checked' : ''}> ${esc(n.naam)}</label>`).join('')}</div>
+    </fieldset>
+    <label>Stappen <span class="hint">Eén stap per regel.</span><textarea name="stappen" rows="6">${esc(o.stappen.join('\n'))}</textarea></label>
+    <label>Let op <span class="hint">Waarschuwing of aandachtspunt.</span><textarea name="letop" rows="2">${esc(o.letop)}</textarea></label>
+    <label>Waarom <span class="hint">Waarom deze oefening helpt.</span><textarea name="waarom" rows="2">${esc(o.waarom)}</textarea></label>
+    <fieldset><legend>Video</legend>
+      <div id="video-preview">${o.video ? `<video src="${esc(o.video)}" controls preload="metadata"></video>` : '<p class="muted small">Nog geen video.</p>'}</div>
+      <label>Link naar video <span class="hint">Upload hieronder een bestand (max. 50 MB, mp4), of plak een link naar een mp4-bestand.</span><input type="text" name="video" value="${esc(o.video)}"></label>
+      <div class="row"><label class="btn ghost small" style="display:inline-block">Video uploaden<input type="file" accept="video/mp4,video/webm,video/quicktime" data-a="upload" hidden></label>
+        ${o.video ? '<button type="button" class="link" data-a="geen-video">Video weghalen</button>' : ''}<span class="muted small" id="upload-status"></span></div>
+    </fieldset>
+    <label class="check"><input type="checkbox" name="zichtbaar" ${o.zichtbaar ? 'checked' : ''}> Zichtbaar in de app <span class="hint">(uitvinken = concept, alleen jij ziet het)</span></label>
+    <div class="row"><button class="btn">${nieuw ? 'Oefening toevoegen' : 'Opslaan'}</button><button type="button" class="btn ghost" data-a="terug">Annuleren</button>
+      <span class="spacer"></span>${nieuw ? '' : '<button type="button" class="btn danger small" data-a="wis-oefening">Verwijderen</button>'}</div>
+  </form>`;
+}
+
+// stijlen and niveaus share one editable list layout
+function lijstTab(soort) {
+  if (!concept) concept = structuredClone(D[soort]);
+  const label = soort === 'stijlen' ? ['zangstijl', 'Zangstijlen', 'Bv. "Opera, lied, oratorium"'] : ['niveau', 'Niveaus', 'Bv. "Ik zing minder dan 2 jaar of zonder les"'];
+  return `<div class="card">
+    <h2>${label[1]}</h2>
+    <p class="muted small">Zo staan ze in de app bij het instellen van een profiel. Een ${label[0]} die nog bij een oefening hoort, kun je niet verwijderen.</p>
+    <div class="list">${concept.map((x, i) => `<div class="edit-row">
+      <div class="ordering"><button data-a="omhoog" data-v="${i}" ${i === 0 ? 'disabled' : ''} aria-label="Omhoog">▲</button><button data-a="omlaag" data-v="${i}" ${i === concept.length - 1 ? 'disabled' : ''} aria-label="Omlaag">▼</button></div>
+      <input type="text" data-veld="naam" data-i="${i}" value="${esc(x.naam)}" placeholder="Naam" aria-label="Naam">
+      <input type="text" data-veld="sub" data-i="${i}" value="${esc(x.sub)}" placeholder="${esc(label[2])}" aria-label="Omschrijving">
+      <button class="btn ghost small" data-a="wis-rij" data-v="${i}" ${concept.length <= 1 ? 'disabled' : ''}>Verwijderen</button></div>`).join('')}</div>
+    <div class="row"><button class="btn ghost small" data-a="rij-erbij">+ ${label[0]} toevoegen</button><span class="spacer"></span>
+      <button class="btn ghost" data-a="herstel">Ongedaan maken</button><button class="btn" data-a="bewaar-lijst" data-v="${soort}">Opslaan</button></div>
+  </div>`;
+}
+
+function durenTab() {
+  if (!concept) concept = structuredClone(D.duren);
+  return `<div class="card">
+    <h2>Duur van het opwarmen</h2>
+    <p class="muted small">De keuzes bij "Hoe lang wil je meestal opwarmen?". Afkoelen duurt automatisch de helft (minstens 5 minuten).</p>
+    <div class="list">${concept.map((d, i) => `<div class="edit-row" style="grid-template-columns:120px 1fr auto">
+      <input type="number" min="1" max="60" data-veld="min" data-i="${i}" value="${d.min}" aria-label="Minuten">
+      <input type="text" data-veld="sub" data-i="${i}" value="${esc(d.sub)}" placeholder="Bv. Snel, voor een repetitie" aria-label="Omschrijving">
+      <button class="btn ghost small" data-a="wis-rij" data-v="${i}" ${concept.length <= 1 ? 'disabled' : ''}>Verwijderen</button></div>`).join('')}</div>
+    <div class="row"><button class="btn ghost small" data-a="rij-erbij">+ Duur toevoegen</button><span class="spacer"></span>
+      <button class="btn ghost" data-a="herstel">Ongedaan maken</button><button class="btn" data-a="bewaar-duren">Opslaan</button></div>
+  </div>`;
+}
+
+function accountTab() {
+  return `<form class="card" data-form="wachtwoord">
+    <h2>Wachtwoord wijzigen</h2>
+    <label>Nieuw wachtwoord <span class="hint">Minstens 8 tekens.</span><input type="password" name="wachtwoord" minlength="8" required autocomplete="new-password"></label>
+    <div class="row"><button class="btn">Wachtwoord opslaan</button></div>
+  </form>
+  <div class="card">
+    <h2>Back-up</h2>
+    <p class="muted small">Download alle inhoud (oefeningen, stijlen, niveaus, duur) als bestand. Doe dit af en toe, bv. voor je veel gaat aanpassen. Video's zitten er niet in.</p>
+    <div class="row"><button class="btn ghost" data-a="backup">Back-up downloaden</button></div>
+  </div>`;
+}
+
+/* ---------- Oefening opslaan ---------- */
+function leesOefening(form) {
+  const f = new FormData(form), alle = n => f.getAll(n);
+  const o = {
+    titel: f.get('titel').trim(), kort: f.get('kort').trim(), soort: alle('soort'), cat: f.get('cat'),
+    duur: Math.round(+f.get('duur')), klank: f.get('klank').trim() || '—',
+    stijlen: f.get('alle-stijlen') ? ['alle'] : alle('stijlen'),
+    niveau: f.get('alle-niveaus') ? null : alle('niveau'),
+    stappen: f.get('stappen').split('\n').map(s => s.trim()).filter(Boolean),
+    letop: f.get('letop').trim(), waarom: f.get('waarom').trim(), video: f.get('video').trim(), zichtbaar: !!f.get('zichtbaar'),
+  };
+  const fout = !o.titel ? 'Geef de oefening een titel.'
+    : !o.soort.length ? 'Kies opwarmen, afkoelen of allebei.'
+    : !(o.duur >= 10 && o.duur <= 1800) ? 'De duur moet tussen 10 en 1800 seconden liggen.'
+    : !o.stijlen.length ? 'Kies minstens één zangstijl, of "Alle stijlen".'
+    : o.niveau && !o.niveau.length ? 'Kies minstens één niveau, of "Alle niveaus".'
+    : !o.stappen.length ? 'Voeg minstens één stap toe.' : '';
+  return { o, fout };
+}
+async function bewaarOefening(form) {
+  const { o, fout } = leesOefening(form);
+  if (fout) return toast(fout, true);
+  const knop = form.querySelector('button:not([type])'); knop.disabled = true;
+  const { error } = bewerk.nieuw
+    ? await db.from('oefeningen').insert({ ...o, id: uniek(slug(o.titel), D.oefeningen.map(x => x.id)) })
+    : await db.from('oefeningen').update(o).eq('id', bewerk.o.id);
+  knop.disabled = false;
+  if (error) return toast(foutTekst(error), true);
+  await laadAlles(); bewerk = null; render(); toast('Opgeslagen');
+}
+
+// soort/categorie combos that never land in a routine's ordered slots
+function checkCategorie(form) {
+  const soort = [...form.querySelectorAll('[name=soort]:checked')].map(x => x.value), cat = form.cat.value;
+  const mis = soort.filter(s => !VOLGORDE[s].includes(cat));
+  form.querySelector('#cat-warn').textContent = mis.length
+    ? `${CATEGORIEEN[cat]} hoort normaal niet bij ${mis.map(s => SOORT[s].toLowerCase()).join(' en ')}: de oefening wordt dan zelden of op een vreemde plek gekozen.` : '';
+}
+
+async function uploadVideo(bestand) {
+  const status = document.getElementById('upload-status'), form = document.querySelector('[data-form=oefening]');
+  if (bestand.size > MAX_VIDEO) return toast(`Dit bestand is ${Math.round(bestand.size / 1048576)} MB; het maximum is 50 MB. Maak de video korter of kleiner.`, true);
+  status.textContent = 'Bezig met uploaden…';
+  const ext = (bestand.name.split('.').pop() || 'mp4').toLowerCase();
+  const pad = `${slug(form.titel.value || 'video')}-${Date.now()}.${ext}`;
+  const { error } = await db.storage.from('videos').upload(pad, bestand, { contentType: bestand.type });
+  if (error) { status.textContent = ''; return toast(foutTekst(error), true); }
+  const url = db.storage.from('videos').getPublicUrl(pad).data.publicUrl;
+  form.video.value = url;
+  document.getElementById('video-preview').innerHTML = `<video src="${esc(url)}" controls preload="metadata"></video>`;
+  status.textContent = 'Geüpload. Vergeet niet op Opslaan te klikken.';
+}
+
+/* ---------- Stijlen / niveaus / duren opslaan ---------- */
+async function bewaarLijst(soort) {
+  const rijen = concept.map(x => ({ ...x, naam: x.naam.trim(), sub: x.sub.trim() }));
+  if (rijen.some(x => !x.naam)) return toast('Elke rij heeft een naam nodig.', true);
+  const ids = [];
+  rijen.forEach((x, i) => { x.positie = i; if (!x.id) x.id = uniek(slug(x.naam), [...ids, ...D[soort].map(y => y.id)]); ids.push(x.id); });
+  const weg = D[soort].filter(x => !ids.includes(x.id)).map(x => x.id);
+  // a style/level still referenced by an exercise must stay
+  const veld = soort === 'stijlen' ? 'stijlen' : 'niveau';
+  const inGebruik = weg.filter(id => D.oefeningen.some(o => o[veld]?.includes(id)));
+  if (inGebruik.length) {
+    const namen = D[soort].filter(x => inGebruik.includes(x.id)).map(x => `"${x.naam}"`).join(', ');
+    return toast(`${namen} hoort nog bij een of meer oefeningen. Haal het daar eerst weg.`, true);
+  }
+  const up = await db.from(soort).upsert(rijen);
+  if (up.error) return toast(foutTekst(up.error), true);
+  if (weg.length) { const del = await db.from(soort).delete().in('id', weg); if (del.error) return toast(foutTekst(del.error), true); }
+  await laadAlles(); render(); toast('Opgeslagen');
+}
+async function bewaarDuren() {
+  const duren = concept.map(d => ({ min: Math.round(+d.min), sub: d.sub.trim() })).sort((a, b) => a.min - b.min);
+  if (duren.some(d => !(d.min >= 1 && d.min <= 60))) return toast('Elke duur moet tussen 1 en 60 minuten liggen.', true);
+  if (new Set(duren.map(d => d.min)).size !== duren.length) return toast('Elke duur mag maar één keer voorkomen.', true);
+  const { error } = await db.from('instellingen').upsert({ sleutel: 'duren', waarde: duren });
+  if (error) return toast(foutTekst(error), true);
+  await laadAlles(); render(); toast('Opgeslagen');
+}
+
+function downloadBackup() {
+  const blob = new Blob([JSON.stringify({ gemaakt: new Date().toISOString(), ...D }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `kurk-backup-${new Date().toISOString().slice(0, 10)}.json`; a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ---------- Interactie ---------- */
+const ongewijzigd = () => !concept || JSON.stringify(concept) === JSON.stringify(D[tab]);
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-a]'); if (!el || el.disabled || el.type === 'file' || el.type === 'search') return;
+  const a = el.dataset.a, v = el.dataset.v;
+  switch (a) {
+    case 'tab':
+      if (!ongewijzigd() && !confirm('Je hebt wijzigingen die nog niet zijn opgeslagen. Toch verdergaan?')) break;
+      tab = v; bewerk = null; concept = null; render(); break;
+    case 'uitloggen': await db.auth.signOut(); break;
+    case 'nieuw':
+      bewerk = { nieuw: true, o: { titel:'', kort:'', soort:['op'], cat:'lichaam', duur:60, klank:'—', stijlen:['alle'], niveau:null, stappen:[], letop:'', waarom:'', video:'', zichtbaar:true } };
+      render(); window.scrollTo(0, 0); break;
+    case 'bewerk': bewerk = { nieuw: false, o: D.oefeningen.find(o => o.id === v) }; render(); window.scrollTo(0, 0); break;
+    case 'terug': bewerk = null; render(); break;
+    case 'geen-video': {
+      const form = el.closest('form'); form.video.value = '';
+      document.getElementById('video-preview').innerHTML = '<p class="muted small">Nog geen video. Klik op Opslaan om dit te bewaren.</p>'; el.remove(); break;
+    }
+    case 'wis-oefening':
+      if (!confirm(`"${bewerk.o.titel}" definitief verwijderen? Tip: je kunt een oefening ook verbergen door "Zichtbaar in de app" uit te vinken.`)) break;
+      { const { error } = await db.from('oefeningen').delete().eq('id', bewerk.o.id); if (error) return toast(foutTekst(error), true); }
+      await laadAlles(); bewerk = null; render(); toast('Verwijderd'); break;
+    case 'omhoog': case 'omlaag': { const i = +v, j = a === 'omhoog' ? i - 1 : i + 1; [concept[i], concept[j]] = [concept[j], concept[i]]; render(); break; }
+    case 'wis-rij': concept.splice(+v, 1); render(); break;
+    case 'rij-erbij': concept.push(tab === 'duren' ? { min: '', sub: '' } : { naam: '', sub: '' }); render(); app.querySelector('.list .edit-row:last-child input')?.focus(); break;
+    case 'herstel': concept = null; render(); break;
+    case 'bewaar-lijst': await bewaarLijst(v); break;
+    case 'bewaar-duren': await bewaarDuren(); break;
+    case 'backup': downloadBackup(); break;
+  }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.a === 'zoek') { zoek = t.value; const pos = t.selectionStart; render(); const z = app.querySelector('[data-a=zoek]'); z.focus(); z.setSelectionRange(pos, pos); }
+  if (t.dataset.veld && concept) concept[+t.dataset.i][t.dataset.veld] = t.value;
+  if (t.name === 'duur') document.getElementById('duur-hint').textContent = t.value >= 0 ? `= ${fmt(Math.round(+t.value))} min` : '';
+});
+document.addEventListener('change', e => {
+  const t = e.target, form = t.closest('[data-form=oefening]');
+  if (t.name === 'alle-stijlen' || t.name === 'alle-niveaus') form.querySelector(`[data-hangt="${t.name}"]`).classList.toggle('disabled', t.checked);
+  if (form && (t.name === 'soort' || t.name === 'cat')) checkCategorie(form);
+  if (t.dataset.a === 'upload' && t.files[0]) uploadVideo(t.files[0]).finally(() => t.value = '');
+});
+document.addEventListener('submit', async e => {
+  e.preventDefault();
+  const form = e.target, f = new FormData(form);
+  if (form.dataset.form === 'login') {
+    const { error } = await db.auth.signInWithPassword({ email: f.get('email').trim(), password: f.get('wachtwoord') });
+    if (error) toast(foutTekst(error), true);
+  }
+  if (form.dataset.form === 'oefening') await bewaarOefening(form);
+  if (form.dataset.form === 'wachtwoord') {
+    const { error } = await db.auth.updateUser({ password: f.get('wachtwoord') });
+    if (error) return toast(foutTekst(error), true);
+    form.reset(); toast('Wachtwoord gewijzigd');
+  }
+});
+window.addEventListener('beforeunload', e => { if (bewerk || !ongewijzigd()) e.preventDefault(); });
+
+/* ---------- Start ---------- */
+db.auth.onAuthStateChange((event, sessie) => {
+  const nieuw = sessie?.user ?? null;
+  if (nieuw?.id === gebruiker?.id && event !== 'INITIAL_SESSION') return; // token refresh: nothing to redraw
+  gebruiker = nieuw;
+  // supabase-js advises not to await its own calls inside this callback
+  setTimeout(async () => {
+    isAdmin = false;
+    if (gebruiker) {
+      const { data } = await db.from('admins').select('email').eq('email', gebruiker.email.toLowerCase()).maybeSingle();
+      isAdmin = !!data;
+      if (isAdmin) try { await laadAlles(); } catch (err) { toast(foutTekst(err), true); }
+    }
+    render();
+  });
+});
+</script>
+</body>
+</html>

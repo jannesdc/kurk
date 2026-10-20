@@ -188,6 +188,7 @@ p { margin: 0; }
 <div id="app"></div>
 <div id="toast" class="toast" hidden></div>
 
+<script src="config.js"></script>
 <script>
 /* =====================================================================
    OEFENINGEN — hier komt de echte inhoud van de logopedist.
@@ -206,9 +207,12 @@ p { margin: 0; }
    stappen  lijst met stappen
    letop    waarschuwing of aandachtspunt
    waarom   waarom deze oefening helpt
-   video    bestandsnaam in de map videos/, bv. 'videos/lippentril.mp4' ('' = nog geen video)
+   video    bestandsnaam in de map videos/, bv. 'videos/lippentril.mp4', of een volledige URL ('' = nog geen video)
+
+   Dit is de INGEBOUWDE inhoud: die wordt alleen gebruikt als de app de
+   inhoud uit Supabase (beheerd via admin.html) nog nooit heeft kunnen ophalen.
    ===================================================================== */
-const OEFENINGEN = [
+let OEFENINGEN = [
   { id:'schouders', titel:'Schouders en nek losmaken', soort:['op'], cat:'lichaam', duur:60, stijlen:['alle'], klank:'—',
     kort:'Laat spanning uit je schouders en nek zakken.',
     stappen:['Ga rechtop staan met je voeten op heupbreedte.','Trek je schouders op naar je oren en laat ze in één keer vallen. Doe dit 5 keer.','Rol je schouders langzaam 5 keer naar achteren.','Laat je hoofd rustig van links naar rechts hangen, zonder te forceren.'],
@@ -308,7 +312,7 @@ const OEFENINGEN = [
     letop:'Fluister niet tijdens stemrust. Fluisteren is vermoeiend voor je stem.', waarom:'Je stem herstelt het best in stilte.', video:'' },
 ];
 
-const STIJLEN = [
+let STIJLEN = [
   { id:'klassiek', naam:'Klassiek', sub:'Opera, lied, oratorium' },
   { id:'musical', naam:'Musical', sub:'Musicaltheater, cabaret' },
   { id:'pop', naam:'Pop', sub:'Pop, R&B, covers' },
@@ -318,12 +322,12 @@ const STIJLEN = [
   { id:'folk', naam:'Singer-songwriter', sub:'Folk, kleinkunst' },
   { id:'gospel', naam:'Gospel & soul', sub:'Gospel, soul, worship' },
 ];
-const NIVEAUS = [
+let NIVEAUS = [
   { id:'beginner', naam:'Beginner', sub:'Ik zing minder dan 2 jaar of zonder les' },
   { id:'gevorderd', naam:'Gevorderd', sub:'Ik zing al een tijd of volg zangles' },
   { id:'pro', naam:'Professioneel', sub:'Ik zing (semi)professioneel of studeer zang' },
 ];
-const DUREN = [5, 10, 15];
+let DUREN = [{ min:5, sub:'Snel, voor een repetitie' }, { min:10, sub:'Aanbevolen voor de meeste zangers' }, { min:15, sub:'Uitgebreid, voor een optreden' }];
 const CATEGORIEEN = { lichaam:'Lichaam', adem:'Ademhaling', sovt:'SOVT', resonantie:'Resonantie', bereik:'Bereik', articulatie:'Articulatie', stijl:'Stijl', ontspanning:'Ontspanning', afbouw:'Afbouwen', rust:'Stemrust' };
 const VOLGORDE = {
   op: ['lichaam','adem','sovt','resonantie','bereik','articulatie','stijl'],
@@ -339,6 +343,34 @@ function laad() {
   return structuredClone(LEEG);
 }
 function bewaar() { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {} }
+
+/* ---------- Inhoud: ingebouwd → laatst opgehaald → live uit Supabase ---------- */
+const INHOUD_KEY = 'kurk.inhoud';
+let nieuweInhoud = null;
+function zetInhoud(i) {
+  if (!i?.oefeningen?.length || !i.stijlen?.length || !i.niveaus?.length || !i.duren?.length) return;
+  ({ oefeningen:OEFENINGEN, stijlen:STIJLEN, niveaus:NIVEAUS, duren:DUREN } = i);
+}
+try { zetInhoud(JSON.parse(localStorage.getItem(INHOUD_KEY))); } catch (e) {}
+// niet wisselen terwijl iemand een oefening of sessie open heeft (ids kunnen verdwijnen)
+const kanWisselen = () => !['oefening', 'sessie', 'klaar'].includes(scherm.naam) && !(scherm.naam === 'onboarding' && scherm.stap === 1);
+async function haalInhoud() {
+  const c = window.KURK; if (!c?.url || !c?.key) return;
+  const get = pad => fetch(c.url + '/rest/v1/' + pad, { headers: { apikey: c.key } }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+  try {
+    const [oefeningen, stijlen, niveaus, inst] = await Promise.all([
+      get('oefeningen?select=id,titel,soort,cat,duur,stijlen,niveau,klank,kort,stappen,letop,waarom,video&zichtbaar=is.true&order=positie'),
+      get('stijlen?select=id,naam,sub&order=positie'),
+      get('niveaus?select=id,naam,sub&order=positie'),
+      get('instellingen?select=sleutel,waarde')]);
+    const i = { oefeningen, stijlen, niveaus, duren: inst.find(x => x.sleutel === 'duren')?.waarde };
+    const tekst = JSON.stringify(i);
+    if (tekst === localStorage.getItem(INHOUD_KEY)) return;
+    try { localStorage.setItem(INHOUD_KEY, tekst); } catch (e) {}
+    nieuweInhoud = i;
+    if (kanWisselen()) render();
+  } catch (e) { /* offline of Supabase onbereikbaar: verder met wat we hebben */ }
+}
 
 /* ---------- Routine samenstellen ---------- */
 function hash(s) { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return (h >>> 0) % 1000 / 1000; }
@@ -382,10 +414,11 @@ function maakRoutine(soort) {
 function reden(o) {
   if (data.voorkeur[o.id] === 1) return '<span class="tag fav">' + I.heart + ' Favoriet</span>';
   if (o.stijlen.includes('alle')) return '';
-  const namen = o.stijlen.filter(x => data.stijlen.includes(x)).map(x => STIJLEN.find(s => s.id === x).naam);
-  return namen.length ? '<span class="tag style">Voor ' + namen.join(', ') + '</span>' : '';
+  const namen = stijlNamen(o.stijlen.filter(x => data.stijlen.includes(x)));
+  return namen.length ? '<span class="tag style">Voor ' + esc(namen.join(', ')) + '</span>' : '';
 }
 const byId = id => OEFENINGEN.find(o => o.id === id);
+const stijlNamen = ids => ids.map(x => STIJLEN.find(s => s.id === x)?.naam).filter(Boolean);
 const fmt = s => Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0');
 const min = s => Math.round(s / 60);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
@@ -424,6 +457,7 @@ function toast(t) {
 }
 
 function render() {
+  if (nieuweInhoud && kanWisselen()) { zetInhoud(nieuweInhoud); nieuweInhoud = null; }
   const v = { onboarding, home, routine, oefening, bibliotheek, profiel, sessie, klaar }[scherm.naam];
   app.innerHTML = v();
   if (scherm.naam === 'sessie') tekenTimer();
@@ -439,6 +473,8 @@ function onboarding() {
   const st = scherm.stap, totaal = 5;
   const dots = '<div class="dots" aria-hidden="true">' + Array.from({length: totaal}, (_, i) => `<i class="${i <= st ? 'on' : ''}"></i>`).join('') + '</div>';
   let body = '', knop = '', kanVerder = true;
+  if (!NIVEAUS.some(n => n.id === concept.niveau)) concept.niveau = NIVEAUS[0].id;
+  if (!DUREN.some(d => d.min === concept.duur)) concept.duur = DUREN[Math.floor(DUREN.length / 2)].min;
   if (st === 0) {
     const bars = Array.from({length: 26}, (_, i) => `<i style="height:${20 + Math.round(Math.abs(Math.sin(i * .7)) * 80)}px;animation-delay:${(i * 0.08).toFixed(2)}s"></i>`).join('');
     body = `<div class="hero-wave" aria-hidden="true">${bars}</div>
@@ -452,15 +488,15 @@ function onboarding() {
     knop = 'Volgende';
   } else if (st === 2) {
     body = `<p class="eyebrow">Je stijl</p><h1>Wat voor zang doe je?</h1><p class="muted">Kies er zoveel als je wilt. We stemmen de oefeningen hierop af.</p>
-      <div class="choice-grid">${STIJLEN.map(s => `<button class="choice" data-a="stijl" data-v="${s.id}" aria-pressed="${concept.stijlen.includes(s.id)}"><b>${s.naam}</b><span>${s.sub}</span></button>`).join('')}</div>`;
+      <div class="choice-grid">${STIJLEN.map(s => `<button class="choice" data-a="stijl" data-v="${s.id}" aria-pressed="${concept.stijlen.includes(s.id)}"><b>${esc(s.naam)}</b><span>${esc(s.sub)}</span></button>`).join('')}</div>`;
     knop = 'Volgende'; kanVerder = concept.stijlen.length > 0;
   } else if (st === 3) {
     body = `<p class="eyebrow">Ervaring</p><h1>Hoeveel zangervaring heb je?</h1>
-      <div class="choice-list">${NIVEAUS.map(n => `<button class="choice" data-a="niveau" data-v="${n.id}" aria-pressed="${concept.niveau === n.id}"><b>${n.naam}</b><span>${n.sub}</span></button>`).join('')}</div>`;
+      <div class="choice-list">${NIVEAUS.map(n => `<button class="choice" data-a="niveau" data-v="${n.id}" aria-pressed="${concept.niveau === n.id}"><b>${esc(n.naam)}</b><span>${esc(n.sub)}</span></button>`).join('')}</div>`;
     knop = 'Volgende';
   } else {
     body = `<p class="eyebrow">Tijd</p><h1>Hoe lang wil je meestal opwarmen?</h1><p class="muted">Afkoelen duurt ongeveer de helft. Je kunt dit later altijd aanpassen.</p>
-      <div class="choice-list">${DUREN.map(d => `<button class="choice" data-a="duur" data-v="${d}" aria-pressed="${concept.duur === d}"><b>${d} minuten</b><span>${d === 5 ? 'Snel, voor een repetitie' : d === 10 ? 'Aanbevolen voor de meeste zangers' : 'Uitgebreid, voor een optreden'}</span></button>`).join('')}</div>`;
+      <div class="choice-list">${DUREN.map(d => `<button class="choice" data-a="duur" data-v="${d.min}" aria-pressed="${concept.duur === d.min}"><b>${d.min} minuten</b><span>${esc(d.sub)}</span></button>`).join('')}</div>`;
     knop = 'Mijn routine maken';
   }
   return `<main class="shell no-nav"><div class="ob">
@@ -483,7 +519,7 @@ function modeCard(soort) {
 function home() {
   const u = new Date().getHours();
   const groet = u < 12 ? 'Goedemorgen' : u < 18 ? 'Goedemiddag' : 'Goedenavond';
-  const stijlen = data.stijlen.map(x => STIJLEN.find(s => s.id === x).naam).join(' · ');
+  const stijlen = esc(stijlNamen(data.stijlen).join(' · '));
   const laatste = data.laatste ? `<p class="muted">Laatste sessie: ${data.laatste.soort === 'op' ? 'opwarmen' : 'afkoelen'}, ${new Date(data.laatste.t).toLocaleDateString('nl-BE', { weekday:'long', day:'numeric', month:'long' })}</p>` : '';
   return `<main class="shell">
     <span class="proto">Prototype · voorbeeldoefeningen</span>
@@ -525,7 +561,7 @@ function videoBlok(o) {
 
 function oefening() {
   const o = byId(scherm.id), v = data.voorkeur[o.id] || 0;
-  const stijlTekst = o.stijlen.includes('alle') ? 'Alle stijlen' : o.stijlen.map(x => STIJLEN.find(s => s.id === x).naam).join(', ');
+  const stijlTekst = o.stijlen.includes('alle') ? 'Alle stijlen' : esc(stijlNamen(o.stijlen).join(', '));
   return `<main class="shell no-nav">
     <div class="topbar"><button class="iconbtn" data-a="terug" aria-label="Terug">${I.back}</button><div class="t"><p class="eyebrow">${CATEGORIEEN[o.cat]} · ${o.soort.map(s => s === 'op' ? 'opwarmen' : 'afkoelen').join(' & ')}</p></div></div>
     <h1>${esc(o.titel)}</h1>
@@ -564,11 +600,11 @@ function profiel() {
     <h1>Profiel</h1>
     <section class="group"><h3>Naam</h3><input class="field" id="pnaam" data-a="pnaam" placeholder="Je voornaam" value="${esc(data.naam)}"></section>
     <section class="group"><h3>Mijn stijlen</h3>
-      <div class="choice-grid">${STIJLEN.map(s => `<button class="choice" data-a="pstijl" data-v="${s.id}" aria-pressed="${data.stijlen.includes(s.id)}"><b>${s.naam}</b><span>${s.sub}</span></button>`).join('')}</div></section>
+      <div class="choice-grid">${STIJLEN.map(s => `<button class="choice" data-a="pstijl" data-v="${s.id}" aria-pressed="${data.stijlen.includes(s.id)}"><b>${esc(s.naam)}</b><span>${esc(s.sub)}</span></button>`).join('')}</div></section>
     <section class="group"><h3>Ervaring</h3>
-      <div class="chips">${NIVEAUS.map(n => `<button class="chip" data-a="pniveau" data-v="${n.id}" aria-pressed="${data.niveau === n.id}">${n.naam}</button>`).join('')}</div></section>
+      <div class="chips">${NIVEAUS.map(n => `<button class="chip" data-a="pniveau" data-v="${n.id}" aria-pressed="${data.niveau === n.id}">${esc(n.naam)}</button>`).join('')}</div></section>
     <section class="group"><h3>Opwarmtijd</h3>
-      <div class="chips">${DUREN.map(d => `<button class="chip" data-a="pduur" data-v="${d}" aria-pressed="${data.duur === d}">${d} min</button>`).join('')}</div></section>
+      <div class="chips">${DUREN.map(d => `<button class="chip" data-a="pduur" data-v="${d.min}" aria-pressed="${data.duur === d.min}">${d.min} min</button>`).join('')}</div></section>
     <section class="group"><h3>Voorkeuren</h3><p class="muted">${nFav} favoriet${nFav === 1 ? '' : 'en'} · ${nNee} overgeslagen</p>
       ${nFav + nNee ? '<button class="link" data-a="wisvoorkeur">Voorkeuren wissen</button>' : ''}</section>
     ${bevestig ? `<div class="confirm"><b>Alles wissen en opnieuw beginnen?</b><p class="muted">Je profiel en voorkeuren worden verwijderd.</p>
@@ -712,4 +748,5 @@ document.addEventListener('keydown', e => {
 });
 
 render();
+haalInhoud();
 </script>
