@@ -38,6 +38,7 @@ Test locally by opening `index.html` in a browser (works offline except Google F
 - **Screens:** functions returning HTML strings (`onboarding`, `home`, `routine`, `oefening`, `bibliotheek`, `profiel`, `sessie`, `klaar`); `ga(scherm)` navigates, `render()` redraws. Always escape user/content text with `esc()`.
 
 ## Open items
-- [ ] Supabase setup: create project → run `schema.sql` then `seed.sql` → sign-ups off → fill `config.js` → per admin: add user (auto-confirm) + `insert into admins values ('email')`.
+- [x] Supabase setup done 2026-10-20 (project ref `aiqoebkejtnduchlyrxo`, sign-ups off). Admin login + live edit verified.
+- New admin: Supabase → Authentication → Users → Add user (auto-confirm) + `insert into admins values ('email-lowercase');`.
 - [ ] All 24 exercises are **placeholders** — the speech therapist (logopedist) replaces them via `/admin`.
 - [ ] "Prototype · voorbeeldoefeningen" badge on home (`home()` in `app.html`) — remove once real content is in.
