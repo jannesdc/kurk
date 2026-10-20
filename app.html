@@ -1,0 +1,715 @@
+<title>Kurk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap">
+<style>
+/* Layout: mobile-first app shell (max 480px column), bottom tab bar; warm = opwarmen, cool = afkoelen */
+:root {
+  --bg: #EEF2F1;
+  --surface: #FFFFFF;
+  --ink: #182326;
+  --muted: #56666A;
+  --line: #D6DFDD;
+  --warm: #C9531F;
+  --warm-soft: #FBE4D6;
+  --cool: #23707F;
+  --cool-soft: #D7ECEF;
+  --good: #2F7D4F;
+  --bad: #A8402E;
+  --shadow: 0 1px 2px rgb(24 35 38 / .06), 0 6px 20px rgb(24 35 38 / .06);
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --r: 18px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101618; --surface: #1A2326; --ink: #E7EEEE; --muted: #9AABAE; --line: #2B373A;
+    --warm: #F08657; --warm-soft: #3B2418; --cool: #63BCCB; --cool-soft: #15313A;
+    --good: #6CC593; --bad: #F08A78; --shadow: 0 1px 2px rgb(0 0 0 / .3);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101618; --surface: #1A2326; --ink: #E7EEEE; --muted: #9AABAE; --line: #2B373A;
+  --warm: #F08657; --warm-soft: #3B2418; --cool: #63BCCB; --cool-soft: #15313A;
+  --good: #6CC593; --bad: #F08A78; --shadow: 0 1px 2px rgb(0 0 0 / .3);
+  color-scheme: dark;
+}
+html, body { background: var(--bg); color: var(--ink); }
+body { font-family: var(--f-body); font-size: 16px; line-height: 1.5; -webkit-tap-highlight-color: transparent; }
+* { box-sizing: border-box; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid var(--cool); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--f-display); line-height: 1.1; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: 2rem; font-weight: 800; }
+h2 { font-size: 1.35rem; font-weight: 700; }
+h3 { font-size: 1.05rem; font-weight: 700; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.eyebrow { font-size: .75rem; text-transform: uppercase; letter-spacing: .09em; font-weight: 700; color: var(--muted); }
+
+.shell {
+  max-width: 480px; margin: 0 auto; min-height: 100%;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 120px;
+  display: flex; flex-direction: column; gap: 22px;
+}
+.shell.no-nav { padding-bottom: 40px; }
+.proto { align-self: flex-start; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; font-weight: 700; color: var(--muted); border: 1px dashed var(--line); border-radius: 99px; padding: 3px 10px; }
+
+/* Buttons */
+.btn { border: 0; border-radius: 14px; padding: 15px 20px; font-weight: 700; font-size: 1.02rem; background: var(--ink); color: var(--bg); width: 100%; }
+.btn.warm { background: var(--warm); color: #fff; }
+.btn.cool { background: var(--cool); color: #fff; }
+:root[data-theme="dark"] .btn.warm, :root[data-theme="dark"] .btn.cool { color: #101618; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.warm, :root:not([data-theme="light"]) .btn.cool { color: #101618; } }
+.btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.link { background: none; border: 0; padding: 6px 0; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+.iconbtn { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--surface); display: grid; place-items: center; flex: none; }
+.iconbtn svg { width: 20px; height: 20px; }
+.topbar { display: flex; align-items: center; gap: 12px; }
+.topbar .t { flex: 1; min-width: 0; }
+
+/* Onboarding */
+.ob { display: flex; flex-direction: column; gap: 24px; min-height: calc(100dvh - 80px); }
+.ob-body { flex: 1; display: flex; flex-direction: column; gap: 18px; }
+.dots { display: flex; gap: 6px; }
+.dots i { height: 5px; flex: 1; border-radius: 9px; background: var(--line); }
+.dots i.on { background: var(--ink); }
+.choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.choice { text-align: left; border: 1.5px solid var(--line); background: var(--surface); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.choice b { font-family: var(--f-display); font-size: 1.02rem; }
+.choice span { font-size: .84rem; color: var(--muted); }
+.choice[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.choice-list { display: flex; flex-direction: column; gap: 10px; }
+.field { width: 100%; font: inherit; font-size: 1.1rem; padding: 14px 16px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); }
+.hero-wave { height: 140px; border-radius: var(--r); background: linear-gradient(120deg, var(--warm-soft), var(--cool-soft)); display: flex; align-items: center; justify-content: center; gap: 5px; overflow: hidden; }
+.hero-wave i { width: 6px; border-radius: 6px; background: var(--ink); opacity: .85; animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scaleY(.45); } }
+@media (prefers-reduced-motion: reduce) { .hero-wave i { animation: none; } }
+
+/* Home */
+.greet { display: flex; flex-direction: column; gap: 4px; }
+.mode-card { border: 0; text-align: left; border-radius: var(--r); padding: 20px; display: flex; flex-direction: column; gap: 14px; width: 100%; }
+.mode-card.warm { background: var(--warm-soft); }
+.mode-card.cool { background: var(--cool-soft); }
+.mode-card .row { display: flex; align-items: center; gap: 12px; }
+.mode-card .badge { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+.mode-card.warm .badge { background: var(--warm); color: var(--warm-soft); }
+.mode-card.cool .badge { background: var(--cool); color: var(--cool-soft); }
+.mode-card .badge svg { width: 24px; height: 24px; }
+.mode-card h2 { font-size: 1.5rem; }
+.mode-card .meta { display: flex; gap: 14px; font-size: .9rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.mode-card .go { margin-left: auto; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+.mode-card.warm .go { color: var(--warm); }
+.mode-card.cool .go { color: var(--cool); }
+.soon { border: 1.5px dashed var(--line); border-radius: var(--r); padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+.tag { display: inline-flex; align-items: center; gap: 4px; font-size: .74rem; font-weight: 700; padding: 3px 9px; border-radius: 99px; background: var(--line); color: var(--ink); white-space: nowrap; }
+.tag.fav { background: var(--warm-soft); color: var(--warm); }
+.tag.style { background: var(--cool-soft); color: var(--cool); }
+.tag svg { width: 12px; height: 12px; }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* Exercise list */
+.ex-list { display: flex; flex-direction: column; background: var(--surface); border-radius: var(--r); box-shadow: var(--shadow); overflow: hidden; }
+.ex-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 0; background: none; text-align: left; width: 100%; border-top: 1px solid var(--line); }
+.ex-item:first-child { border-top: 0; }
+.ex-item .num { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: .85rem; flex: none; font-variant-numeric: tabular-nums; }
+.warmth .num { background: var(--warm-soft); color: var(--warm); }
+.coolth .num { background: var(--cool-soft); color: var(--cool); }
+.ex-item .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.ex-item .txt b { font-family: var(--f-display); font-size: 1rem; }
+.ex-item .sub { font-size: .85rem; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.ex-item .dur { font-variant-numeric: tabular-nums; font-size: .88rem; color: var(--muted); flex: none; }
+.ipa { font-family: ui-monospace, "Cascadia Mono", Menlo, monospace; font-size: .82rem; }
+.summary { display: flex; gap: 18px; font-variant-numeric: tabular-nums; }
+.summary div { display: flex; flex-direction: column; }
+.summary b { font-family: var(--f-display); font-size: 1.6rem; }
+.summary span { font-size: .8rem; color: var(--muted); }
+.sticky-cta { position: sticky; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 8px; }
+
+/* Filters */
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.chip { border: 1.5px solid var(--line); background: var(--surface); border-radius: 99px; padding: 7px 14px; font-size: .9rem; font-weight: 700; white-space: nowrap; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.group { display: flex; flex-direction: column; gap: 10px; }
+
+/* Exercise detail */
+.video { position: relative; aspect-ratio: 16 / 9; max-width: 100%; border-radius: var(--r); overflow: hidden; background: var(--ink); color: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 16px; }
+.video video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.video .bars { display: flex; gap: 4px; align-items: center; height: 46px; opacity: .55; }
+.video .bars i { width: 4px; border-radius: 4px; background: currentColor; }
+.video small { font-size: .82rem; opacity: .75; max-width: 30ch; }
+.facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.facts div { background: var(--surface); border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.facts span { font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 700; }
+.facts b { font-size: .95rem; overflow-wrap: anywhere; }
+.steps { margin: 0; padding: 0; list-style: none; counter-reset: s; display: flex; flex-direction: column; gap: 12px; }
+.steps li { counter-increment: s; display: grid; grid-template-columns: 30px 1fr; gap: 12px; align-items: start; }
+.steps li::before { content: counter(s); width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; font-weight: 700; font-size: .85rem; }
+.note { border-radius: 14px; padding: 14px 16px; background: var(--surface); display: flex; flex-direction: column; gap: 4px; }
+.note.warn { background: var(--warm-soft); }
+.pref { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pref button { border: 1.5px solid var(--line); background: var(--surface); border-radius: 14px; padding: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.pref button svg { width: 18px; height: 18px; }
+.pref button[aria-pressed="true"].like { border-color: var(--warm); color: var(--warm); background: var(--warm-soft); }
+.pref button[aria-pressed="true"].nope { border-color: var(--bad); color: var(--bad); }
+
+/* Session player */
+.player { display: flex; flex-direction: column; gap: 20px; align-items: stretch; min-height: calc(100dvh - 60px); }
+.progress { display: flex; gap: 4px; }
+.progress i { height: 5px; flex: 1; border-radius: 9px; background: var(--line); }
+.progress i.done { background: var(--accent); }
+.progress i.now { background: linear-gradient(90deg, var(--accent) var(--p, 0%), var(--line) var(--p, 0%)); }
+.ring-wrap { position: relative; width: min(240px, 70vw); aspect-ratio: 1; max-width: 100%; align-self: center; }
+.ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring-wrap .t { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ring-wrap .t b { font-family: var(--f-display); font-size: 3.2rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.controls { display: flex; justify-content: center; align-items: center; gap: 22px; }
+.controls .main { width: 72px; height: 72px; border-radius: 50%; border: 0; background: var(--accent); color: #fff; display: grid; place-items: center; }
+.controls .main svg { width: 30px; height: 30px; }
+.next-up { font-size: .9rem; color: var(--muted); text-align: center; }
+
+/* Confirm */
+.confirm { border: 1.5px solid var(--bad); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.confirm .row { display: flex; gap: 10px; }
+
+/* Bottom nav */
+.nav { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); z-index: 5; }
+.nav .in { max-width: 480px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); }
+.nav button { border: 0; background: none; padding: 10px 0 12px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: .78rem; font-weight: 700; color: var(--muted); }
+.nav button svg { width: 22px; height: 22px; }
+.nav button[aria-current="page"] { color: var(--ink); }
+.toast { position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-weight: 700; font-size: .9rem; z-index: 9; max-width: calc(100% - 32px); }
+</style>
+
+<div id="app"></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+/* =====================================================================
+   OEFENINGEN — hier komt de echte inhoud van de logopedist.
+   Alle oefeningen hieronder zijn VOORBEELDEN.
+
+   Velden per oefening:
+   id       unieke korte naam (geen spaties)
+   titel    naam van de oefening
+   soort    ['op'] = opwarmen, ['af'] = afkoelen, of allebei
+   cat      categorie (zie CATEGORIEEN)
+   duur     duur in seconden
+   stijlen  ['alle'] of een lijst stijl-id's (zie STIJLEN)
+   niveau   (optioneel) alleen voor deze niveaus: 'beginner','gevorderd','pro'
+   klank    de klank die je maakt (bv. [m], [brr])
+   kort     één zin uitleg
+   stappen  lijst met stappen
+   letop    waarschuwing of aandachtspunt
+   waarom   waarom deze oefening helpt
+   video    bestandsnaam in de map videos/, bv. 'videos/lippentril.mp4' ('' = nog geen video)
+   ===================================================================== */
+const OEFENINGEN = [
+  { id:'schouders', titel:'Schouders en nek losmaken', soort:['op'], cat:'lichaam', duur:60, stijlen:['alle'], klank:'—',
+    kort:'Laat spanning uit je schouders en nek zakken.',
+    stappen:['Ga rechtop staan met je voeten op heupbreedte.','Trek je schouders op naar je oren en laat ze in één keer vallen. Doe dit 5 keer.','Rol je schouders langzaam 5 keer naar achteren.','Laat je hoofd rustig van links naar rechts hangen, zonder te forceren.'],
+    letop:'Beweeg rustig. Voel je pijn, stop dan.', waarom:'Spanning in nek en schouders werkt door tot in je strottenhoofd en maakt je klank strakker.', video:'' },
+  { id:'kaak', titel:'Kaakmassage', soort:['op'], cat:'lichaam', duur:60, stijlen:['alle'], klank:'[ha]',
+    kort:'Maak je kaakspieren los met je vingertoppen.',
+    stappen:['Leg je vingertoppen op je kaakspier, net voor je oren.','Masseer met kleine cirkels terwijl je mond licht open hangt.','Laat je kaak op het einde zwaar zakken en zucht op [ha].'],
+    letop:'Duw niet te hard. Het moet prettig blijven.', waarom:'Een losse kaak geeft je klank en je tong meer ruimte.', video:'' },
+  { id:'sss', titel:'Uitademen op sss', soort:['op'], cat:'adem', duur:90, stijlen:['alle'], klank:'[s]',
+    kort:'Train een rustige, gelijkmatige uitademing.',
+    stappen:['Leg een hand op je buik.','Adem in door je neus en voel je buik en flanken uitzetten.','Adem uit op een lange, gelijkmatige [s] van 8 tellen.','Verleng elke ronde met 2 tellen, tot 16 tellen.'],
+    letop:'Houd je schouders laag tijdens het inademen.', waarom:'Een gelijkmatige luchtstroom is de basis voor een stabiele toon.', video:'' },
+  { id:'staccato', titel:'Staccato op ha', soort:['op'], cat:'adem', duur:60, stijlen:['klassiek','musical','gospel','koor'], klank:'[ha]',
+    kort:'Korte, veerkrachtige impulsen vanuit je buik.',
+    stappen:['Leg je handen op je flanken.','Zeg 5 korte [ha]’s na elkaar en voel je buik bij elke [ha] intrekken.','Herhaal op een comfortabele toonhoogte, daarna een toon hoger.'],
+    letop:'Hou je keel open: de impuls komt uit je buik, niet uit je keel.', waarom:'Activeert je ademsteun voor krachtige inzetten.', video:'' },
+  { id:'lippentril', titel:'Lippentril op glijtoon', soort:['op'], cat:'sovt', duur:90, stijlen:['alle'], klank:'[brr]',
+    kort:'Laat je lippen trillen terwijl je van laag naar hoog glijdt.',
+    stappen:['Ontspan je lippen en blaas tot ze gaan trillen, zoals een paard.','Voeg een toon toe in je spreekhoogte.','Glijd langzaam omhoog en weer omlaag.','Maak de glijtoon elke ronde iets groter.'],
+    letop:'Lukt de tril niet? Duw zacht met twee vingers je wangen naar voren.', waarom:'Een halfgesloten mond zorgt voor tegendruk, zodat je stemplooien soepel en zonder druk trillen.', video:'' },
+  { id:'rietje', titel:'Zingen door een rietje', soort:['op','af'], cat:'sovt', duur:120, stijlen:['alle'], klank:'[u] door rietje',
+    kort:'Neurie of zing een melodie door een rietje.',
+    stappen:['Neem een rietje tussen je lippen. Sluit je lippen er goed omheen.','Maak een zachte [u] door het rietje.','Glijd op en neer, of zing een eenvoudig liedje door het rietje.','Hou je wangen en nek ontspannen.'],
+    letop:'Een dunner rietje geeft meer weerstand. Begin met een gewoon drinkrietje.', waarom:'Een van de best onderzochte oefeningen om je stem zowel op te warmen als te laten herstellen.', video:'' },
+  { id:'neurien', titel:'Neuriën op mmm', soort:['op'], cat:'resonantie', duur:60, stijlen:['alle'], klank:'[m]',
+    kort:'Voel trilling rond je lippen en neus.',
+    stappen:['Sluit je lippen zacht, tanden los van elkaar.','Neurie op een comfortabele toon.','Zoek de toon waarbij je de meeste trilling rond je lippen voelt.','Glijd van daaruit een paar tonen omhoog en omlaag.'],
+    letop:'Je lippen mogen kriebelen. Dat is goed.', waarom:'Brengt je klank naar voren, wat helderheid geeft zonder extra kracht.', video:'' },
+  { id:'twang', titel:'Twang op njee', soort:['op'], cat:'resonantie', duur:60, stijlen:['musical','pop','rock','gospel'], klank:'[ɲɛ]',
+    kort:'Een heldere, snijdende klank, zoals een eend of een plagend kind.',
+    stappen:['Zeg [njee] op een hoge, nasale manier, alsof je iemand plaagt.','Zing het op drie oplopende tonen.','Haal het nasale weg en hou de helderheid vast.'],
+    letop:'Het moet licht en makkelijk aanvoelen, niet geknepen.', waarom:'Twang geeft volume en draagkracht met minder inspanning.', video:'' },
+  { id:'sirene', titel:'Sirene op ng', soort:['op'], cat:'bereik', duur:90, stijlen:['alle'], klank:'[ŋ]',
+    kort:'Glijd als een sirene door je hele bereik.',
+    stappen:['Zeg [ng] zoals aan het eind van "zingen". Je tong raakt achteraan je verhemelte.','Glijd van laag naar hoog en terug.','Laat de overgangen in je stem gewoon gebeuren.'],
+    letop:'Ga niet hoger dan comfortabel. Elke dag een beetje is genoeg.', waarom:'Verbindt borst- en kopstem en maakt de overgang soepeler.', video:'' },
+  { id:'vijftoon', titel:'Vijftonige ladder op mi-me-ma', soort:['op'], cat:'bereik', duur:120, stijlen:['klassiek','koor','musical','jazz'], klank:'[mi me ma mo mu]',
+    kort:'Een klassieke toonladder van vijf tonen, op en af.',
+    stappen:['Zing do-re-mi-fa-sol-fa-mi-re-do op [mi me ma mo mu].','Begin in je comfortabele middenligging.','Schuif telkens een halve toon op.','Keer terug zodra het zwaar begint te voelen.'],
+    letop:'Hou elke klinker even rond en open.', waarom:'Traint gelijkmatige klinkers over je bereik.', video:'' },
+  { id:'octaaf', titel:'Octaafsprong op ja', soort:['op'], cat:'bereik', duur:90, stijlen:['pop','musical','gospel','rock','folk'], niveau:['gevorderd','pro'], klank:'[ja]',
+    kort:'Spring een octaaf omhoog en glijd terug.',
+    stappen:['Zing [ja] op een lage toon.','Spring een octaaf omhoog.','Glijd langzaam terug naar beneden.','Schuif een halve toon op en herhaal.'],
+    letop:'Hou je kin laag als je omhoog springt.', waarom:'Maakt grote sprongen in je repertoire makkelijker.', video:'' },
+  { id:'tongbreker', titel:'Tongbrekers', soort:['op'], cat:'articulatie', duur:60, stijlen:['alle'], klank:'—',
+    kort:'Een losse tong en lippen voor een duidelijke tekst.',
+    stappen:['Zeg langzaam: "De kat krabt de krollen van de trap."','Zeg daarna: "Liesje leerde Lotje lopen langs de lange Lindelaan."','Versnel elke ronde een beetje.','Zing ze daarna op één toon.'],
+    letop:'Duidelijk is belangrijker dan snel.', waarom:'Je publiek moet je tekst verstaan, ook bij snelle passages.', video:'' },
+  { id:'tong', titel:'Kauwend neuriën', soort:['op'], cat:'articulatie', duur:60, stijlen:['alle'], klank:'[m]',
+    kort:'Neurie terwijl je overdreven kauwt.',
+    stappen:['Neurie op [m] op een comfortabele toon.','Kauw ondertussen overdreven, alsof je een grote kauwgom hebt.','Laat je tong vrij bewegen in je mond.'],
+    letop:'Hou je schouders los terwijl je kauwt.', waarom:'Ontspant tong, kaak en lippen tegelijk.', video:'' },
+  { id:'belt', titel:'Van roepen naar zingen', soort:['op'], cat:'stijl', duur:90, stijlen:['musical','pop','rock','gospel'], niveau:['gevorderd','pro'], klank:'[hej]',
+    kort:'Voorbereiding op belten: een krachtige, spraakachtige klank.',
+    stappen:['Roep "hey!" naar iemand aan de overkant van de straat.','Doe dit op een vaste toon.','Houd de toon twee tellen aan zonder kracht te verliezen.','Schuif een halve toon op.'],
+    letop:'Voel je druk in je keel? Neem een stap terug naar een lagere toon.', waarom:'Zoekt de krachtige klank van belten zonder te persen.', video:'' },
+  { id:'scat', titel:'Scat-ritme', soort:['op'], cat:'stijl', duur:90, stijlen:['jazz'], klank:'[du ba di]',
+    kort:'Speel met ritme en lettergrepen op een swingend patroon.',
+    stappen:['Tik een rustige swing op je been.','Zing [du-ba-di-ba] op één toon in het ritme.','Varieer met de toonhoogte en met accenten.'],
+    letop:'Lichtheid gaat boven volume.', waarom:'Warmt je ritmegevoel en lichte articulatie op.', video:'' },
+  { id:'koorklank', titel:'Samen op één oe', soort:['op'], cat:'stijl', duur:90, stijlen:['koor','klassiek'], klank:'[u]',
+    kort:'Stem je klank af op een lange, rustige [u].',
+    stappen:['Zet een bromtoon aan of laat een toon spelen.','Zing een zachte [u] op dezelfde toon.','Luister of je klank versmelt met de bromtoon.','Maak de klank geleidelijk iets voller.'],
+    letop:'Luisteren is net zo belangrijk als zingen.', waarom:'Traint zuiver zingen en samenklank.', video:'' },
+  { id:'stillelach', titel:'Stille lach', soort:['op'], cat:'stijl', duur:60, stijlen:['rock'], niveau:['gevorderd','pro'], klank:'—',
+    kort:'Maak ruimte in je keel voor rauwe klanken.',
+    stappen:['Lach zonder geluid, alsof je in de bibliotheek bent.','Voel hoe je keel ruim en open wordt.','Hou dat gevoel vast en zeg zacht [a].'],
+    letop:'Doe distortion enkel onder begeleiding. Rauw mag nooit pijn doen.', waarom:'Leert je keel open houden, zodat je veiliger kunt schreeuwen.', video:'' },
+  { id:'spreekzang', titel:'Van praten naar zingen', soort:['op'], cat:'stijl', duur:60, stijlen:['folk','pop','jazz'], klank:'—',
+    kort:'Zeg een zin uit je lied en zing hem daarna op dezelfde plek.',
+    stappen:['Kies een zin uit een lied dat je straks zingt.','Zeg de zin op een natuurlijke spreektoon.','Zing hem nu met dezelfde ontspannenheid.'],
+    letop:'Je zang moet even makkelijk voelen als praten.', waarom:'Zorgt voor een natuurlijke, persoonlijke klank.', video:'' },
+
+  { id:'zucht', titel:'Zuchten en gapen', soort:['af'], cat:'ontspanning', duur:60, stijlen:['alle'], klank:'[ha]',
+    kort:'Laat je stem zakken met een diepe zucht.',
+    stappen:['Gaap met je mond dicht. Voel je keel ruim worden.','Zucht daarna hoorbaar van hoog naar laag op [ha].','Herhaal 5 keer, steeds zachter.'],
+    letop:'Druk niet op het einde van de zucht. Laat hem uitlopen.', waarom:'Ontspant je strottenhoofd na het zingen.', video:'' },
+  { id:'dalend', titel:'Dalende glijtonen op oe', soort:['af'], cat:'afbouw', duur:90, stijlen:['alle'], klank:'[u]',
+    kort:'Zachte glijtonen van boven naar beneden.',
+    stappen:['Begin iets boven je spreekhoogte.','Glijd zacht naar beneden op [u].','Begin elke keer een beetje lager.','Eindig in je spreekhoogte.'],
+    letop:'Zo zacht als je kunt, zonder te fluisteren.', waarom:'Brengt je stem terug naar je spreekhoogte.', video:'' },
+  { id:'neurielaag', titel:'Zacht neuriën in je spreekhoogte', soort:['af'], cat:'afbouw', duur:60, stijlen:['alle'], klank:'[m]',
+    kort:'Neurie zacht zoals je zou zeggen "mm-hm".',
+    stappen:['Zeg "mm-hm" alsof je instemt met iemand.','Neurie verder op die toon.','Laat de toon langzaam wegsterven.'],
+    letop:'Dit is geen oefening om sterker te worden. Rustig is goed.', waarom:'Zet je stem terug in je spreekstand.', video:'' },
+  { id:'trilaf', titel:'Lippentril naar beneden', soort:['af'], cat:'sovt', duur:60, stijlen:['alle'], klank:'[brr]',
+    kort:'Lippentril van hoog naar laag, steeds zachter.',
+    stappen:['Begin een lippentril in je middenligging.','Glijd langzaam naar beneden.','Maak elke ronde de glijtoon kleiner en zachter.'],
+    letop:'Ontspannen lippen. Gebruik je vingers als de tril niet lukt.', waarom:'Masseert je stemplooien zacht na een inspanning.', video:'' },
+  { id:'stretch', titel:'Nek- en schouderstretch', soort:['af'], cat:'lichaam', duur:90, stijlen:['alle'], klank:'—',
+    kort:'Rek de spieren die tijdens het zingen hard gewerkt hebben.',
+    stappen:['Leg je rechteroor rustig richting je rechterschouder. Hou 15 tellen.','Wissel naar links.','Vouw je handen achter je rug en open je borst. Hou 15 tellen.'],
+    letop:'Adem rustig door tijdens het rekken.', waarom:'Na het optreden zit er vaak spanning in je nek en schouders.', video:'' },
+  { id:'rust', titel:'Stemrust en water', soort:['af'], cat:'rust', duur:60, stijlen:['alle'], klank:'—',
+    kort:'Een minuut stilte en een glas water.',
+    stappen:['Ga zitten.','Drink een glas water in kleine slokjes.','Praat een minuut niet. Adem rustig door je neus.'],
+    letop:'Fluister niet tijdens stemrust. Fluisteren is vermoeiend voor je stem.', waarom:'Je stem herstelt het best in stilte.', video:'' },
+];
+
+const STIJLEN = [
+  { id:'klassiek', naam:'Klassiek', sub:'Opera, lied, oratorium' },
+  { id:'musical', naam:'Musical', sub:'Musicaltheater, cabaret' },
+  { id:'pop', naam:'Pop', sub:'Pop, R&B, covers' },
+  { id:'rock', naam:'Rock & metal', sub:'Rauw, luid, distortion' },
+  { id:'jazz', naam:'Jazz', sub:'Standards, scat, swing' },
+  { id:'koor', naam:'Koor', sub:'Koor, ensemble, a capella' },
+  { id:'folk', naam:'Singer-songwriter', sub:'Folk, kleinkunst' },
+  { id:'gospel', naam:'Gospel & soul', sub:'Gospel, soul, worship' },
+];
+const NIVEAUS = [
+  { id:'beginner', naam:'Beginner', sub:'Ik zing minder dan 2 jaar of zonder les' },
+  { id:'gevorderd', naam:'Gevorderd', sub:'Ik zing al een tijd of volg zangles' },
+  { id:'pro', naam:'Professioneel', sub:'Ik zing (semi)professioneel of studeer zang' },
+];
+const DUREN = [5, 10, 15];
+const CATEGORIEEN = { lichaam:'Lichaam', adem:'Ademhaling', sovt:'SOVT', resonantie:'Resonantie', bereik:'Bereik', articulatie:'Articulatie', stijl:'Stijl', ontspanning:'Ontspanning', afbouw:'Afbouwen', rust:'Stemrust' };
+const VOLGORDE = {
+  op: ['lichaam','adem','sovt','resonantie','bereik','articulatie','stijl'],
+  af: ['sovt','afbouw','ontspanning','lichaam','rust'],
+};
+
+/* ---------- Opslag (alleen in deze browser) ---------- */
+const KEY = 'kurk.v1';
+const LEEG = { onboarded:false, naam:'', stijlen:[], niveau:'beginner', duur:10, voorkeur:{}, mix:{op:0, af:0}, laatste:null };
+let data = laad();
+function laad() {
+  try { const r = localStorage.getItem(KEY); if (r) return { ...LEEG, ...JSON.parse(r) }; } catch (e) {}
+  return structuredClone(LEEG);
+}
+function bewaar() { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {} }
+
+/* ---------- Routine samenstellen ---------- */
+function hash(s) { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return (h >>> 0) % 1000 / 1000; }
+function score(o, soort) {
+  if (data.voorkeur[o.id] === -1) return null;
+  if (o.niveau && !o.niveau.includes(data.niveau)) return null;
+  let s;
+  if (o.stijlen.includes('alle')) s = 1;
+  else {
+    const overlap = o.stijlen.filter(x => data.stijlen.includes(x)).length;
+    if (!overlap && data.voorkeur[o.id] !== 1) return null; // favorieten mogen altijd
+    s = 2 + overlap;
+  }
+  if (data.voorkeur[o.id] === 1) s += 5;
+  const mix = data.mix[soort] || 0;
+  if (mix) s += hash(o.id + mix) * 2.5;
+  return s;
+}
+function maakRoutine(soort) {
+  const doel = (soort === 'op' ? data.duur : Math.max(5, Math.round(data.duur / 2))) * 60;
+  const kandidaten = OEFENINGEN.filter(o => o.soort.includes(soort))
+    .map(o => ({ o, s: score(o, soort) })).filter(x => x.s !== null)
+    .sort((a, b) => b.s - a.s);
+  const gekozen = [];
+  // 1. de beste oefening per categorie
+  for (const cat of VOLGORDE[soort]) { const k = kandidaten.find(x => x.o.cat === cat); if (k) gekozen.push(k); }
+  // 2. te lang? laagste score eruit (min. 3 oefeningen)
+  const totaal = () => gekozen.reduce((t, x) => t + x.o.duur, 0);
+  while (totaal() > doel && gekozen.length > 3) {
+    const laagste = gekozen.reduce((m, x) => x.s < m.s ? x : m);
+    gekozen.splice(gekozen.indexOf(laagste), 1);
+  }
+  // 3. te kort? aanvullen met de volgende beste
+  for (const k of kandidaten) {
+    if (totaal() >= doel - 30) break;
+    if (!gekozen.includes(k) && totaal() + k.o.duur <= doel + 30) gekozen.push(k);
+  }
+  const plek = o => VOLGORDE[soort].indexOf(o.cat);
+  return gekozen.sort((a, b) => plek(a.o) - plek(b.o)).map(x => x.o);
+}
+function reden(o) {
+  if (data.voorkeur[o.id] === 1) return '<span class="tag fav">' + I.heart + ' Favoriet</span>';
+  if (o.stijlen.includes('alle')) return '';
+  const namen = o.stijlen.filter(x => data.stijlen.includes(x)).map(x => STIJLEN.find(s => s.id === x).naam);
+  return namen.length ? '<span class="tag style">Voor ' + namen.join(', ') + '</span>' : '';
+}
+const byId = id => OEFENINGEN.find(o => o.id === id);
+const fmt = s => Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0');
+const min = s => Math.round(s / 60);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+
+/* ---------- Iconen ---------- */
+const sv = p => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>';
+const I = {
+  back: sv('<path d="M15 18l-6-6 6-6"/>'),
+  next: sv('<path d="M9 18l6-6-6-6"/>'),
+  sun: sv('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
+  wave: sv('<path d="M2 9c2.5-2 4.5-2 7 0s4.5 2 7 0 4.5-2 6 0M2 15c2.5-2 4.5-2 7 0s4.5 2 7 0 4.5-2 6 0"/>'),
+  heart: sv('<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/>'),
+  nope: sv('<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>'),
+  play: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>',
+  pause: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>',
+  prev: sv('<path d="M19 20L9 12l10-8v16zM5 19V5"/>'),
+  skip: sv('<path d="M5 4l10 8-10 8V4zM19 5v14"/>'),
+  home: sv('<path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'),
+  list: sv('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>'),
+  user: sv('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
+  shuffle: sv('<path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>'),
+  close: sv('<path d="M18 6L6 18M6 6l12 12"/>'),
+};
+
+/* ---------- Navigatie / staat van het scherm ---------- */
+let scherm = data.onboarded ? { naam:'home' } : { naam:'onboarding', stap:0 };
+let concept = { naam:data.naam, stijlen:[...data.stijlen], niveau:data.niveau, duur:data.duur };
+let filter = 'alle';
+let bevestig = false;
+const app = document.getElementById('app');
+
+function ga(s) { stopTimer(); scherm = s; bevestig = false; render(); window.scrollTo(0, 0); }
+function toast(t) {
+  const el = document.getElementById('toast'); el.textContent = t; el.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, 1800);
+}
+
+function render() {
+  const v = { onboarding, home, routine, oefening, bibliotheek, profiel, sessie, klaar }[scherm.naam];
+  app.innerHTML = v();
+  if (scherm.naam === 'sessie') tekenTimer();
+}
+const nav = actief => `<nav class="nav" aria-label="Hoofdmenu"><div class="in">
+  <button data-a="tab" data-v="home" ${actief==='home'?'aria-current="page"':''}>${I.home}Vandaag</button>
+  <button data-a="tab" data-v="bibliotheek" ${actief==='bibliotheek'?'aria-current="page"':''}>${I.list}Oefeningen</button>
+  <button data-a="tab" data-v="profiel" ${actief==='profiel'?'aria-current="page"':''}>${I.user}Profiel</button>
+</div></nav>`;
+
+/* ---------- Schermen ---------- */
+function onboarding() {
+  const st = scherm.stap, totaal = 5;
+  const dots = '<div class="dots" aria-hidden="true">' + Array.from({length: totaal}, (_, i) => `<i class="${i <= st ? 'on' : ''}"></i>`).join('') + '</div>';
+  let body = '', knop = '', kanVerder = true;
+  if (st === 0) {
+    const bars = Array.from({length: 26}, (_, i) => `<i style="height:${20 + Math.round(Math.abs(Math.sin(i * .7)) * 80)}px;animation-delay:${(i * 0.08).toFixed(2)}s"></i>`).join('');
+    body = `<div class="hero-wave" aria-hidden="true">${bars}</div>
+      <h1>Kurk</h1>
+      <p class="muted" style="font-size:1.1rem">Warm je stem op voor je zingt en laat ze rustig afkoelen erna. Met oefeningen die passen bij hoe jij zingt.</p>`;
+    knop = 'Aan de slag';
+  } else if (st === 1) {
+    body = `<p class="eyebrow">Even kennismaken</p><h1>Hoe mogen we je noemen?</h1>
+      <input class="field" id="naam" data-a="naam" placeholder="Je voornaam" value="${esc(concept.naam)}" autocomplete="given-name">
+      <p class="muted">Mag je ook leeg laten.</p>`;
+    knop = 'Volgende';
+  } else if (st === 2) {
+    body = `<p class="eyebrow">Je stijl</p><h1>Wat voor zang doe je?</h1><p class="muted">Kies er zoveel als je wilt. We stemmen de oefeningen hierop af.</p>
+      <div class="choice-grid">${STIJLEN.map(s => `<button class="choice" data-a="stijl" data-v="${s.id}" aria-pressed="${concept.stijlen.includes(s.id)}"><b>${s.naam}</b><span>${s.sub}</span></button>`).join('')}</div>`;
+    knop = 'Volgende'; kanVerder = concept.stijlen.length > 0;
+  } else if (st === 3) {
+    body = `<p class="eyebrow">Ervaring</p><h1>Hoeveel zangervaring heb je?</h1>
+      <div class="choice-list">${NIVEAUS.map(n => `<button class="choice" data-a="niveau" data-v="${n.id}" aria-pressed="${concept.niveau === n.id}"><b>${n.naam}</b><span>${n.sub}</span></button>`).join('')}</div>`;
+    knop = 'Volgende';
+  } else {
+    body = `<p class="eyebrow">Tijd</p><h1>Hoe lang wil je meestal opwarmen?</h1><p class="muted">Afkoelen duurt ongeveer de helft. Je kunt dit later altijd aanpassen.</p>
+      <div class="choice-list">${DUREN.map(d => `<button class="choice" data-a="duur" data-v="${d}" aria-pressed="${concept.duur === d}"><b>${d} minuten</b><span>${d === 5 ? 'Snel, voor een repetitie' : d === 10 ? 'Aanbevolen voor de meeste zangers' : 'Uitgebreid, voor een optreden'}</span></button>`).join('')}</div>`;
+    knop = 'Mijn routine maken';
+  }
+  return `<main class="shell no-nav"><div class="ob">
+    <div class="topbar">${st > 0 ? `<button class="iconbtn" data-a="ob-terug" aria-label="Terug">${I.back}</button>` : ''}<div class="t">${dots}</div></div>
+    <div class="ob-body">${body}</div>
+    <button class="btn" data-a="ob-verder" ${kanVerder ? '' : 'disabled'}>${knop}</button>
+  </div></main>`;
+}
+
+function modeCard(soort) {
+  const r = maakRoutine(soort), t = r.reduce((a, o) => a + o.duur, 0);
+  const warm = soort === 'op';
+  return `<button class="mode-card ${warm ? 'warm' : 'cool'}" data-a="routine" data-v="${soort}">
+    <div class="row"><span class="badge">${warm ? I.sun : I.wave}</span>
+      <div><p class="eyebrow">${warm ? 'Voor het zingen' : 'Na het zingen'}</p><h2>${warm ? 'Opwarmen' : 'Afkoelen'}</h2></div></div>
+    <div class="row"><div class="meta"><span>${min(t)} min</span><span>${r.length} oefeningen</span></div><span class="go">Bekijk ${I.next.replace('<svg', '<svg width="18" height="18"')}</span></div>
+  </button>`;
+}
+
+function home() {
+  const u = new Date().getHours();
+  const groet = u < 12 ? 'Goedemorgen' : u < 18 ? 'Goedemiddag' : 'Goedenavond';
+  const stijlen = data.stijlen.map(x => STIJLEN.find(s => s.id === x).naam).join(' · ');
+  const laatste = data.laatste ? `<p class="muted">Laatste sessie: ${data.laatste.soort === 'op' ? 'opwarmen' : 'afkoelen'}, ${new Date(data.laatste.t).toLocaleDateString('nl-BE', { weekday:'long', day:'numeric', month:'long' })}</p>` : '';
+  return `<main class="shell">
+    <span class="proto">Prototype · voorbeeldoefeningen</span>
+    <div class="greet"><h1>${groet}${data.naam ? ', ' + esc(data.naam) : ''}</h1><p class="muted">${stijlen}</p></div>
+    ${modeCard('op')}
+    ${modeCard('af')}
+    ${laatste}
+    <div class="soon"><div class="tags"><span class="tag">Binnenkort</span></div><h3>Trainingsplan naar je optreden</h3>
+      <p class="muted">Vul de datum van je optreden in en krijg een opbouwend schema voor de weken ervoor en het herstel erna.</p></div>
+  </main>${nav('home')}`;
+}
+
+function exItem(o, i, soort) {
+  return `<button class="ex-item" data-a="oefening" data-v="${o.id}">
+    <span class="num">${i + 1}</span>
+    <span class="txt"><b>${esc(o.titel)}</b><span class="sub"><span>${CATEGORIEEN[o.cat]}</span>${o.klank !== '—' ? `<span class="ipa">${esc(o.klank)}</span>` : ''}${reden(o)}</span></span>
+    <span class="dur">${fmt(o.duur)}</span></button>`;
+}
+
+function routine() {
+  const soort = scherm.soort, r = maakRoutine(soort), t = r.reduce((a, o) => a + o.duur, 0);
+  const warm = soort === 'op';
+  return `<main class="shell no-nav">
+    <div class="topbar"><button class="iconbtn" data-a="tab" data-v="home" aria-label="Terug">${I.back}</button>
+      <div class="t"><p class="eyebrow">${warm ? 'Voor het zingen' : 'Na het zingen'}</p><h1>${warm ? 'Opwarmen' : 'Afkoelen'}</h1></div>
+      <button class="iconbtn" data-a="mix" data-v="${soort}" aria-label="Andere oefeningen kiezen" title="Andere mix">${I.shuffle}</button></div>
+    <div class="summary"><div><b>${min(t)}</b><span>minuten</span></div><div><b>${r.length}</b><span>oefeningen</span></div></div>
+    <div class="ex-list ${warm ? 'warmth' : 'coolth'}">${r.map((o, i) => exItem(o, i, soort)).join('')}</div>
+    <p class="muted" style="font-size:.9rem">Samengesteld op basis van je stijl, je niveau en je favorieten. Tik op een oefening voor uitleg.</p>
+    <div class="sticky-cta"><button class="btn ${warm ? 'warm' : 'cool'}" data-a="start" data-v="${soort}">Start ${warm ? 'opwarmen' : 'afkoelen'}</button></div>
+  </main>`;
+}
+
+function videoBlok(o) {
+  if (o.video) return `<div class="video"><video src="${esc(o.video)}" controls playsinline preload="metadata"></video></div>`;
+  const bars = Array.from({length: 22}, (_, i) => `<i style="height:${10 + Math.round(Math.abs(Math.sin(i * 1.3 + o.titel.length)) * 36)}px"></i>`).join('');
+  return `<div class="video" role="img" aria-label="Plaats voor instructievideo"><div class="bars">${bars}</div><b>Instructievideo volgt</b><small>Hier komt de video van de logopedist voor deze oefening.</small></div>`;
+}
+
+function oefening() {
+  const o = byId(scherm.id), v = data.voorkeur[o.id] || 0;
+  const stijlTekst = o.stijlen.includes('alle') ? 'Alle stijlen' : o.stijlen.map(x => STIJLEN.find(s => s.id === x).naam).join(', ');
+  return `<main class="shell no-nav">
+    <div class="topbar"><button class="iconbtn" data-a="terug" aria-label="Terug">${I.back}</button><div class="t"><p class="eyebrow">${CATEGORIEEN[o.cat]} · ${o.soort.map(s => s === 'op' ? 'opwarmen' : 'afkoelen').join(' & ')}</p></div></div>
+    <h1>${esc(o.titel)}</h1>
+    <p style="font-size:1.08rem">${esc(o.kort)}</p>
+    ${videoBlok(o)}
+    <div class="facts"><div><span>Duur</span><b>${fmt(o.duur)}</b></div><div><span>Klank</span><b class="ipa">${esc(o.klank)}</b></div><div><span>Stijl</span><b>${stijlTekst}</b></div></div>
+    <section class="group"><h2>Zo doe je het</h2><ol class="steps">${o.stappen.map(s => `<li><span>${esc(s)}</span></li>`).join('')}</ol></section>
+    <div class="note warn"><p class="eyebrow">Let op</p><p>${esc(o.letop)}</p></div>
+    <div class="note"><p class="eyebrow">Waarom</p><p>${esc(o.waarom)}</p></div>
+    <section class="group"><h3>Wat vind je van deze oefening?</h3>
+      <div class="pref"><button class="like" data-a="pref" data-v="1" aria-pressed="${v === 1}">${I.heart} Favoriet</button>
+      <button class="nope" data-a="pref" data-v="-1" aria-pressed="${v === -1}">${I.nope} Liever niet</button></div>
+      <p class="muted" style="font-size:.88rem">Favorieten komen vaker terug in je routine. Oefeningen die je liever niet doet, slaan we over.</p></section>
+  </main>`;
+}
+
+function bibliotheek() {
+  const filters = [['alle','Alles'],['op','Opwarmen'],['af','Afkoelen'],['fav','Favorieten']];
+  let lijst = OEFENINGEN;
+  if (filter === 'op' || filter === 'af') lijst = lijst.filter(o => o.soort.includes(filter));
+  if (filter === 'fav') lijst = lijst.filter(o => data.voorkeur[o.id] === 1);
+  const groepen = Object.keys(CATEGORIEEN).map(c => [c, lijst.filter(o => o.cat === c)]).filter(g => g[1].length);
+  return `<main class="shell">
+    <h1>Oefeningen</h1>
+    <div class="chips" role="group" aria-label="Filter">${filters.map(([k, n]) => `<button class="chip" data-a="filter" data-v="${k}" aria-pressed="${filter === k}">${n}</button>`).join('')}</div>
+    ${groepen.length ? groepen.map(([c, os]) => `<section class="group"><p class="eyebrow">${CATEGORIEEN[c]}</p>
+      <div class="ex-list">${os.map(o => `<button class="ex-item" data-a="oefening" data-v="${o.id}"><span class="txt"><b>${esc(o.titel)}</b><span class="sub"><span>${esc(o.kort)}</span></span></span><span class="dur">${fmt(o.duur)}</span></button>`).join('')}</div></section>`).join('')
+      : `<div class="soon"><h3>Nog geen favorieten</h3><p class="muted">Open een oefening en tik op Favoriet om ze hier te verzamelen.</p></div>`}
+  </main>${nav('bibliotheek')}`;
+}
+
+function profiel() {
+  const nFav = Object.values(data.voorkeur).filter(x => x === 1).length;
+  const nNee = Object.values(data.voorkeur).filter(x => x === -1).length;
+  return `<main class="shell">
+    <h1>Profiel</h1>
+    <section class="group"><h3>Naam</h3><input class="field" id="pnaam" data-a="pnaam" placeholder="Je voornaam" value="${esc(data.naam)}"></section>
+    <section class="group"><h3>Mijn stijlen</h3>
+      <div class="choice-grid">${STIJLEN.map(s => `<button class="choice" data-a="pstijl" data-v="${s.id}" aria-pressed="${data.stijlen.includes(s.id)}"><b>${s.naam}</b><span>${s.sub}</span></button>`).join('')}</div></section>
+    <section class="group"><h3>Ervaring</h3>
+      <div class="chips">${NIVEAUS.map(n => `<button class="chip" data-a="pniveau" data-v="${n.id}" aria-pressed="${data.niveau === n.id}">${n.naam}</button>`).join('')}</div></section>
+    <section class="group"><h3>Opwarmtijd</h3>
+      <div class="chips">${DUREN.map(d => `<button class="chip" data-a="pduur" data-v="${d}" aria-pressed="${data.duur === d}">${d} min</button>`).join('')}</div></section>
+    <section class="group"><h3>Voorkeuren</h3><p class="muted">${nFav} favoriet${nFav === 1 ? '' : 'en'} · ${nNee} overgeslagen</p>
+      ${nFav + nNee ? '<button class="link" data-a="wisvoorkeur">Voorkeuren wissen</button>' : ''}</section>
+    ${bevestig ? `<div class="confirm"><b>Alles wissen en opnieuw beginnen?</b><p class="muted">Je profiel en voorkeuren worden verwijderd.</p>
+      <div class="row"><button class="btn ghost" data-a="reset-nee">Annuleren</button><button class="btn" style="background:var(--bad);color:var(--bg)" data-a="reset-ja">Wissen</button></div></div>`
+      : '<button class="btn ghost" data-a="reset">Opnieuw beginnen</button>'}
+    <p class="muted" style="font-size:.85rem">Je gegevens blijven op dit toestel, in deze browser. Er wordt niets verstuurd.</p>
+  </main>${nav('profiel')}`;
+}
+
+/* ---------- Begeleide sessie ---------- */
+let timer = null;
+function startSessie(soort) {
+  const lijst = maakRoutine(soort).map(o => o.id);
+  ga({ naam:'sessie', soort, lijst, i:0, rest:byId(lijst[0]).duur, loopt:false });
+  try { navigator.wakeLock?.request('screen').then(l => scherm.lock = l).catch(() => {}); } catch (e) {}
+}
+function sessie() {
+  const s = scherm, o = byId(s.lijst[s.i]), warm = s.soort === 'op';
+  const volgende = s.lijst[s.i + 1] ? 'Hierna: ' + esc(byId(s.lijst[s.i + 1]).titel) : 'Laatste oefening';
+  return `<main class="shell no-nav" style="--accent:var(${warm ? '--warm' : '--cool'})"><div class="player">
+    <div class="topbar"><button class="iconbtn" data-a="stop" aria-label="Sessie stoppen">${I.close}</button>
+      <div class="t"><p class="eyebrow">${warm ? 'Opwarmen' : 'Afkoelen'} · ${s.i + 1} van ${s.lijst.length}</p></div></div>
+    <div class="progress" aria-hidden="true">${s.lijst.map((_, i) => `<i class="${i < s.i ? 'done' : i === s.i ? 'now' : ''}"></i>`).join('')}</div>
+    <div><h1>${esc(o.titel)}</h1><p class="muted" style="margin-top:6px">${esc(o.kort)}</p></div>
+    <div class="ring-wrap"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="54" fill="none" stroke="var(--line)" stroke-width="8"/>
+      <circle id="ring" cx="60" cy="60" r="54" fill="none" stroke="var(--accent)" stroke-width="8" stroke-linecap="round" stroke-dasharray="339.3" stroke-dashoffset="0"/></svg>
+      <div class="t"><b id="tijd">${fmt(s.rest)}</b><span class="ipa muted">${o.klank !== '—' ? esc(o.klank) : ''}</span></div></div>
+    <div class="controls">
+      <button class="iconbtn" data-a="vorige" aria-label="Vorige oefening" ${s.i === 0 ? 'disabled' : ''}>${I.prev}</button>
+      <button class="main" data-a="pauze" aria-label="${s.loopt ? 'Pauzeren' : 'Starten'}">${s.loopt ? I.pause : I.play}</button>
+      <button class="iconbtn" data-a="volgende" aria-label="Volgende oefening">${I.skip}</button></div>
+    <p class="next-up">${volgende}</p>
+    <ol class="steps">${o.stappen.map(x => `<li><span>${esc(x)}</span></li>`).join('')}</ol>
+    <button class="link" data-a="oefening" data-v="${o.id}" data-from="sessie">Video en uitleg bekijken</button>
+  </div></main>`;
+}
+function tekenTimer() {
+  const s = scherm, o = byId(s.lijst[s.i]), p = 1 - s.rest / o.duur;
+  const ring = document.getElementById('ring'), tijd = document.getElementById('tijd'), now = document.querySelector('.progress .now');
+  if (ring) ring.setAttribute('stroke-dashoffset', (339.3 * p).toFixed(1));
+  if (tijd) tijd.textContent = fmt(Math.ceil(s.rest));
+  if (now) now.style.setProperty('--p', (p * 100).toFixed(1) + '%');
+}
+function loopTimer() {
+  stopTimer(); let vorig = performance.now();
+  timer = setInterval(() => {
+    const nu = performance.now(); scherm.rest -= (nu - vorig) / 1000; vorig = nu;
+    if (scherm.rest <= 0) { belletje(); volgendeOef(true); return; }
+    tekenTimer();
+  }, 200);
+}
+function stopTimer() { clearInterval(timer); timer = null; }
+function volgendeOef(auto) {
+  const s = scherm;
+  if (s.i >= s.lijst.length - 1) { klaarSessie(); return; }
+  s.i++; s.rest = byId(s.lijst[s.i]).duur;
+  render(); if (s.loopt) loopTimer();
+}
+function klaarSessie() {
+  const s = scherm;
+  data.laatste = { soort:s.soort, t:Date.now() }; bewaar();
+  try { s.lock?.release(); } catch (e) {}
+  ga({ naam:'klaar', soort:s.soort, lijst:s.lijst });
+}
+let audio;
+function belletje() {
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    [660, 880].forEach((f, i) => {
+      const o = audio.createOscillator(), g = audio.createGain(), t = audio.currentTime + i * 0.18;
+      o.frequency.value = f; o.type = 'sine';
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+      o.connect(g).connect(audio.destination); o.start(t); o.stop(t + 0.55);
+    });
+  } catch (e) {}
+}
+function klaar() {
+  const s = scherm, warm = s.soort === 'op';
+  return `<main class="shell no-nav">
+    <p class="eyebrow">${warm ? 'Opwarmen' : 'Afkoelen'} afgerond</p>
+    <h1>${warm ? 'Je stem is klaar. Veel zangplezier!' : 'Goed gedaan. Gun je stem nu wat rust.'}</h1>
+    <section class="group"><h3>Hoe vond je de oefeningen?</h3><p class="muted">Je keuze bepaalt welke oefeningen we je de volgende keer geven.</p>
+    <div class="ex-list">${s.lijst.map(id => { const o = byId(id), v = data.voorkeur[id] || 0; return `<div class="ex-item"><span class="txt"><b>${esc(o.titel)}</b></span>
+      <span style="display:flex;gap:8px"><button class="iconbtn" data-a="rate" data-id="${id}" data-v="1" aria-pressed="${v === 1}" aria-label="Favoriet" style="${v === 1 ? 'color:var(--warm);border-color:var(--warm)' : ''}">${I.heart}</button>
+      <button class="iconbtn" data-a="rate" data-id="${id}" data-v="-1" aria-pressed="${v === -1}" aria-label="Liever niet" style="${v === -1 ? 'color:var(--bad);border-color:var(--bad)' : ''}">${I.nope}</button></span></div>`; }).join('')}</div></section>
+    <button class="btn" data-a="tab" data-v="home">Terug naar start</button>
+  </main>`;
+}
+
+/* ---------- Interactie ---------- */
+let terugNaar = null;
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-a]'); if (!el || el.disabled) return;
+  const a = el.dataset.a, v = el.dataset.v;
+  switch (a) {
+    case 'ob-verder':
+      if (scherm.stap < 4) { scherm.stap++; render(); }
+      else { Object.assign(data, concept, { onboarded:true }); bewaar(); ga({ naam:'home' }); toast('Je routine staat klaar'); }
+      break;
+    case 'ob-terug': scherm.stap--; render(); break;
+    case 'stijl': concept.stijlen = concept.stijlen.includes(v) ? concept.stijlen.filter(x => x !== v) : [...concept.stijlen, v]; render(); break;
+    case 'niveau': concept.niveau = v; render(); break;
+    case 'duur': concept.duur = +v; render(); break;
+    case 'tab': ga({ naam:v }); break;
+    case 'routine': ga({ naam:'routine', soort:v }); break;
+    case 'mix': data.mix[v] = (data.mix[v] || 0) + 1; bewaar(); render(); toast('Nieuwe mix samengesteld'); break;
+    case 'oefening': {
+      if (el.dataset.from === 'sessie') { terugNaar = { ...scherm, loopt:false }; stopTimer(); }
+      else terugNaar = scherm.naam === 'oefening' ? terugNaar : scherm;
+      ga({ naam:'oefening', id:v }); break;
+    }
+    case 'terug': { const t = terugNaar || { naam:'home' }; terugNaar = null; scherm = t; render(); window.scrollTo(0, 0); break; }
+    case 'pref': { const n = +v, id = scherm.id; data.voorkeur[id] = data.voorkeur[id] === n ? 0 : n; if (!data.voorkeur[id]) delete data.voorkeur[id]; bewaar(); render();
+      toast(data.voorkeur[id] === 1 ? 'Toegevoegd aan favorieten' : data.voorkeur[id] === -1 ? 'We slaan deze oefening voortaan over' : 'Voorkeur gewist'); break; }
+    case 'rate': { const id = el.dataset.id, n = +v; data.voorkeur[id] = data.voorkeur[id] === n ? 0 : n; if (!data.voorkeur[id]) delete data.voorkeur[id]; bewaar(); render(); break; }
+    case 'filter': filter = v; render(); break;
+    case 'pstijl': {
+      const nieuw = data.stijlen.includes(v) ? data.stijlen.filter(x => x !== v) : [...data.stijlen, v];
+      if (!nieuw.length) { toast('Kies minstens één stijl'); break; }
+      data.stijlen = nieuw; bewaar(); render(); break;
+    }
+    case 'pniveau': data.niveau = v; bewaar(); render(); break;
+    case 'pduur': data.duur = +v; bewaar(); render(); break;
+    case 'wisvoorkeur': data.voorkeur = {}; bewaar(); render(); toast('Voorkeuren gewist'); break;
+    case 'reset': bevestig = true; render(); break;
+    case 'reset-nee': bevestig = false; render(); break;
+    case 'reset-ja': data = structuredClone(LEEG); bewaar(); concept = { naam:'', stijlen:[], niveau:'beginner', duur:10 }; ga({ naam:'onboarding', stap:0 }); break;
+    case 'start': startSessie(v); break;
+    case 'pauze': scherm.loopt = !scherm.loopt; stopTimer(); render(); if (scherm.loopt) loopTimer(); break;
+    case 'volgende': volgendeOef(false); break;
+    case 'vorige': scherm.i--; scherm.rest = byId(scherm.lijst[scherm.i]).duur; render(); if (scherm.loopt) loopTimer(); break;
+    case 'stop': try { scherm.lock?.release(); } catch (e) {} ga({ naam:'routine', soort:scherm.soort }); break;
+  }
+});
+document.addEventListener('input', e => {
+  if (e.target.dataset.a === 'naam') concept.naam = e.target.value.trim();
+  if (e.target.dataset.a === 'pnaam') { data.naam = e.target.value.trim(); bewaar(); }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.dataset.a === 'naam') document.querySelector('[data-a="ob-verder"]')?.click();
+});
+
+render();
+</script>
